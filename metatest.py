@@ -23,11 +23,14 @@ class MetaTest(type):
     def __new__(cls, name, bases, attrs):
         for method in attrs.values():
             if callable(method) and hasattr(method, 'metatest_params'):
-                for arg, kw in mix_params(method.metatest_params):
-                    print arg, kw # Closure here!!!!
-                    def test_steps(self, a=arg, k=kw): return method(self, *a, **k)
-                    test_steps.__name__ = 'test_case ' + ', '.join(arg) + ' ' + ', '.join(str(k)+'='+str(v) for k,v in kw.items())
-                    attrs[test_steps.__name__] = test_steps
+                for test_args, test_kwargs in mix_params(method.metatest_params):
+                    print test_args, test_kwargs # Closure here!!!!
+                    def actual_test(self, a=test_args, test_kwargs, k=test_args, test_kwargs):
+                        return method(self, *a, **k)
+                    name = ('test_case ' + ', '.join(arg) + ' ' +
+                            ', '.join(str(k)+'='+str(v) for k,v in kw.items()))
+                    actual_test.__name__ = name
+                    attrs[name] = actual_test
         print (cls, name, bases, attrs)
         return super(MetaTest, cls).__new__(cls, name, bases, attrs)
 
