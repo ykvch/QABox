@@ -17,9 +17,8 @@ def with_combinations(*args, **kwargs):
         return method
     return hook_args_kwargs
 
-
 class MetaTest(type):
-
+    '''Generates multiple tests upon decorated method in class'''
     def __new__(cls, name, bases, attrs):
         for method in attrs.values():
             if callable(method) and hasattr(method, 'metatest_params'):
@@ -34,13 +33,16 @@ class MetaTest(type):
         print (cls, name, bases, attrs)
         return super(MetaTest, cls).__new__(cls, name, bases, attrs)
 
+# Below goes usage example:
+
 class SuiteOne(TestCase):
-    __metaclass__ = MetaTest
+    __metaclass__ = MetaTest # forces use of test generator
 
     def setUp(self):
         print 'running setup'
-
-    @with_combinations(row='123', col='abc')
+    
+    # this one is decorated, so we'll make many tests from it
+    @with_combinations((1,2,3), col=['a','b','c'])
     def one(self, row, col):
         self.assertFalse(row)
 
