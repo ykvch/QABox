@@ -8,7 +8,8 @@ Idea:
 Imagine we need to run the same test steps multiple times, but each time with different
 parameter combinatins.
 For 2 params we can represent this as a table, where columns stand for A values, and rows for B.
-So in case we need to test all combinations of A,B, this would require 9 tests as follows:
+So in case we need to test all combinations of possible values of A=(0,1,2) and B=['a','b','c'],
+this would require 9 tests as follows:
 +-------------------------------+
 |       |  A=0  |  A=1  |  A=2  |
 +-------------------------------+
@@ -19,10 +20,12 @@ So in case we need to test all combinations of A,B, this would require 9 tests a
 | B='c' | test6 | test7 | test8 |
 +-------------------------------+
 
-Copy-pasting, or using nose generator plugin are sometimes not an option.
-So here's the solution. Import MetaTest from current file.
-Then create a test class with `__metaclass__ = MetaTest`
-Inside it create test case methods that accept extra params for A and B
+Copy-pasting, or using nose generator plugin might sometimes not be an option.
+
+So here's the solution:
+1) Import MetaTest from current file.
+2) Create a test class with `__metaclass__ = MetaTest`
+3) Inside it create test case methods that accept extra params for A and B
 and decorate them as follows:
 
 @with_combined(A=[0,1,2], B='abc')
@@ -31,11 +34,15 @@ def test_method(self, A, B):...
 Note that extra params after `self` have to conform the one's in decorator.
 Note2 these do NOT HAVE to be named params, just make sure their amount and naming fit
 to be passed as test_method arguments
+Note3 there can be multiple such decorated test methods in each test class.
 
 That's all. Our metaclass will spawn extra 9 methods each containing
 a `test_method` call, but with different param combinations (as shown below):
 test_method(A=0, B='a'); test_method(A=0, B='b'); test_method(A=0, B='c');
 test_method(A=1, B='a'); test_method(A=1, B='b'); ... test_method(A=2, B='c');
+
+Try it with python -m unittest your_generated_tests_file
+OR with nose tests runner.
 '''
 
 def mix_params(args_kwargs):
@@ -72,8 +79,7 @@ class MetaTest(type):
         print (cls, name, bases, attrs)
         return super(MetaTest, cls).__new__(cls, name, bases, attrs)
 
-# sage example:
-
+# Usage example:
 class SuiteExample(TestCase):
     __metaclass__ = MetaTest # forces use of test generator
     # runTest = lambda *args: True # for debugging purposes only
