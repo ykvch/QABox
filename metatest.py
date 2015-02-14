@@ -70,9 +70,9 @@ class MetaTest(type):
             if callable(method) and hasattr(method, 'metatest_params'):
                 for test_args, test_kwargs in mix_params(method.metatest_params):
                     print test_args, test_kwargs # Closure here!!!!
-                    def actual_test(self, a=test_args, test_kwargs, k=test_args, test_kwargs):
-                        return method(self, *a, **k)
-                    name = ('test_case ' + ', '.join(arg) + ' ' +
+                    def actual_test(self, ar=test_args, kw=test_args):
+                        return method(self, *ar, **kw)
+                    name = ('test_case ' + ', '.join(ar) + (', 'if ar else'') +
                             ', '.join(str(k)+'='+str(v) for k,v in kw.items()))
                     actual_test.__name__ = name
                     attrs[name] = actual_test
