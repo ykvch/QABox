@@ -48,18 +48,18 @@ OR with nose tests runner.
 '''
 
 def mix_params(args_kwargs):
-    '''Helper generator function. Takes args, kwargs as single tuple
-    and returns all their combinations. Each item inside args or kwargs is
-    expected to be an iterable of all desired input values for certain variable'''
+    '''Helper generator function. Takes args+kwargs tuple
+    and returns all param combinations. Each item inside args or kwargs is
+    expected to be an iterable of all desired input values for that certain variable'''
     args, kwargs = args_kwargs
     args_len = len(args)
     for i in itertools.product(*itertools.chain(args, kwargs.values())):
         yield tuple(i[:args_len]), dict(zip(kwargs.keys(), i[args_len:]))
 
 def with_combined(*args, **kwargs):
-    '''Decorator. Pins metatest_params=(args, kwargs) variable on decorated
+    '''Decorator. Adds metatest_params=(args, kwargs) field to decorated
     function or method. metatest_params is a marker for MetaTest class to see which
-    functions have to be turned into multiple tests'''
+    methods have to be wrapped into multiple tests'''
     def hook_args_kwargs(method):
         method.metatest_params = (args, kwargs)
         return method
@@ -75,12 +75,11 @@ class MetaTest(type):
                     # Closure here, using default args trick!!!
                     def actual_test(self, ar=test_args, kw=test_kwargs):
                         return method(self, *ar, **kw)
-                    name = ('test_'+ method.__name__ + ' ' +
+                    method_name = ('test_'+ method.__name__ + ' ' +
                             ''.join(str(a)+', ' for a in test_args) +
                             ', '.join(str(k)+'='+str(v) for k,v in test_kwargs.items()))
-                    actual_test.__name__ = name
-                    attrs[name] = actual_test
-        # print (cls, name, bases, attrs)
+                    actual_test.__name__ = method_name
+                    attrs[method_name] = actual_test
         return super(MetaTest, cls).__new__(cls, name, bases, attrs)
 
 # Usage example:
