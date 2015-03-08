@@ -82,28 +82,30 @@ class MetaTest(type):
                     attrs[method_name] = actual_test
         return super(MetaTest, cls).__new__(cls, name, bases, attrs)
 
-# Usage example:
-class SuiteExample(TestCase):
-    __metaclass__ = MetaTest # forces use of test generator
-    # runTest = lambda *args: True # for debugging purposes only
-
-    def setUp(self):
-        print '\nrunning setup'
-
-    def tearDown(self):
-        print '\ndoing cleanup after test'
+if __name__ == '__main__':
+    # Usage example:
+    class SuiteExample(TestCase):
+        __metaclass__ = MetaTest # forces use of test generator
+        # runTest = lambda *args: True # for debugging purposes only
     
-    # this one is decorated, so we'll spawn many tests from it
-    # this will produce 18 tests, each containing a method call
-    # like (the 1st test): steps2execute(self, 1, col='a', extra='+')
-    # or like (the 18th test): steps2execute(self, 3, col='c', extra='-')
-    @with_combined((1,2,3), col=['a','b','c'], extra='+-')
-    def steps2execute(self, row, col, extra):
-        '''test steps'''
-        print('doing some steps with: row='+str(row)+', col='+col+', extra='+extra)
-        self.assertFalse(row*col+extra)
-
-# Just a plain test suite without generations:
-class T2(TestCase):
-    def test_case_two(self):
-        assert True
+        def setUp(self):
+            print '\nrunning setup'
+    
+        def tearDown(self):
+            print '\ndoing cleanup after test'
+        
+        # decorator means: produce 18 tests, each containing one method call
+        # e.g. (the 1st test): steps2execute(self, 1, col='a', extra='+')
+        # or (the 18th test): steps2execute(self, 3, col='c', extra='-')
+        @with_combined((1,2,3), col=['a','b','c'], extra='+-')
+        def steps2execute(self, row, col, extra):
+            '''test steps'''
+            print 'doing some steps with: row='+str(row)+', col='+col+', extra='+extra
+            self.assertFalse(row*col+extra)
+    
+    # Just a dummy test suite without decorators:
+    class T2(TestCase):
+        def test_case_two(self):
+            assert True
+            
+    unittest.main()
