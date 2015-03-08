@@ -7,11 +7,8 @@ import itertools
 Rationale:
 
 Imagine we need to run the same test steps multiple times, but each time with different
-parameter combinatins.
-For 2 params A and B, we can represent this as a table, where columns stand for A values,
-and rows for B values.
-So, if we need to test all possible combinations of A=(0,1,2) and B=['a','b','c'],
-that would require 9 tests as follows:
+parameter combinations.
+For example: Testing all combinations of A=(0,1,2) and B=['a','b','c'] would require 9 tests as follows:
 +-------------------------------+
 |       |  A=0  |  A=1  |  A=2  |
 +-------------------------------+
@@ -43,30 +40,30 @@ a `test_method` call, but with different param combinations (as shown below):
 test_method(A=0, B='a'); test_method(A=0, B='b'); test_method(A=0, B='c');
 test_method(A=1, B='a'); test_method(A=1, B='b'); ... test_method(A=2, B='c');
 
-Try it with python -m unittest your_generated_tests_file
+Should work fine with python -m unittest your_generated_tests_file
 OR with nose tests runner.
 '''
 
 def mix_params(args_kwargs):
-    '''Helper generator function. Takes args+kwargs tuple
-    and returns all param combinations. Each item inside args or kwargs is
-    expected to be an iterable of all desired input values for that certain variable'''
+    '''Takes args/kwargs tuple and returns all param combinations inside.
+    Each item inside args or kwargs is expected to be an iterable
+    of all desired values for that certain parameter'''
     args, kwargs = args_kwargs
     args_len = len(args)
     for i in itertools.product(*itertools.chain(args, kwargs.values())):
         yield tuple(i[:args_len]), dict(zip(kwargs.keys(), i[args_len:]))
 
 def with_combined(*args, **kwargs):
-    '''Decorator. Adds metatest_params=(args, kwargs) field to decorated
-    function or method. metatest_params is a marker for MetaTest class to see which
-    methods have to be wrapped into multiple tests'''
+    '''Decorator. Adds metatest_params=(args, kwargs) field to decorated method.
+    metatest_params is a marker for MetaTest class to see which
+    methods have to be spawned into multiple tests'''
     def hook_args_kwargs(method):
         method.metatest_params = (args, kwargs)
         return method
     return hook_args_kwargs
 
 class MetaTest(type):
-    '''Generates multiple tests based on decorated method(s) in subtyped class.
+    '''Spawns multiple tests for every `with_combined` decorated method in subtyped class.
     Adds test_ prefix to each method, so it can be recognized as a test'''
     def __new__(cls, name, bases, attrs):
         for method in attrs.values():
@@ -94,7 +91,7 @@ if __name__ == '__main__':
         def tearDown(self):
             print '\ndoing cleanup after test'
         
-        # decorator means: produce 18 tests, each containing one method call
+        # Decorator means: produce 18 tests, each containing one method call
         # e.g. (the 1st test): steps2execute(self, 1, col='a', extra='+')
         # or (the 18th test): steps2execute(self, 3, col='c', extra='-')
         @with_combined((1,2,3), col=['a','b','c'], extra='+-')
