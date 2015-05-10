@@ -28,15 +28,16 @@ So here's the solution:
 and decorate them as follows:
 
 @with_combined(A=[0,1,2], B='abc')
-def test_method(self, A, B):...
+def method(self, A, B):...
 
 Note: that extra params after `self` have to conform the one's in decorator.
 Note2: these do NOT HAVE to be only the named params, just make sure that their
-amount and naming fit test_method arguments.
+amount and naming fit `method` arguments.
 Note3: there can be multiple decorated test methods in each test class.
+Note4: no need for `test_` prefix, our metaclass will add that automatically.
 
 That's all. Our metaclass will then spawn extra 9 methods each containing
-a `test_method` call, but with different param combinations (as shown below):
+a `method` call, but with different param combinations (as shown below):
 test_method(A=0, B='a'); test_method(A=0, B='b'); test_method(A=0, B='c');
 test_method(A=1, B='a'); test_method(A=1, B='b'); ... test_method(A=2, B='c');
 
