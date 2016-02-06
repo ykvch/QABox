@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import unittest
 import itertools
 
 '''
@@ -93,6 +92,8 @@ class MultiTestMixin(object):
 
 if __name__ == '__main__':
     # Usage example:
+    import unittest
+
     class SuiteExample(unittest.TestCase, MultiTestMixin):
         # __metaclass__ = MultiTestMeta # forces use of test generator
         # runTest = lambda *args: True # for debugging purposes only
