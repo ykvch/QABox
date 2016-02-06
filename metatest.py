@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from unittest import TestCase
+import unittest
 import itertools
 
 '''
@@ -22,8 +22,8 @@ For example: Testing all combinations of A=(0,1,2) and B=['a','b','c'] would req
 Copy-pasting, or using nose generator plugin might sometimes not be an option.
 
 So here's the solution:
-1) Import MetaTest from this file.
-2) Create a test class with `__metaclass__ = MetaTest`
+1) Import MultiTest from this file.
+2) Create a test class with `__metaclass__ = MultiTest`
 3) Inside it create test case methods that accept extra params for A and B
 and decorate them as follows:
 
@@ -51,25 +51,26 @@ def mix_params(args_kwargs):
     of all desired values for that certain parameter'''
     args, kwargs = args_kwargs
     args_len = len(args)
+    # values() is guaranteed to have the same order as keys(), we exploit that below
     for i in itertools.product(*itertools.chain(args, kwargs.values())):
         yield tuple(i[:args_len]), dict(zip(kwargs.keys(), i[args_len:]))
 
 def with_combined(*args, **kwargs):
-    '''Decorator. Adds metatest_params=(args, kwargs) field to decorated method.
-    metatest_params is a marker for MetaTest class to see which
+    '''Decorator. Adds _metatest_params=(args, kwargs) field to decorated method.
+    _metatest_params is a marker for MultiTest class to see which
     methods have to be spawned into multiple tests'''
     def hook_args_kwargs(method):
-        method.metatest_params = (args, kwargs)
+        method._metatest_params = (args, kwargs)
         return method
     return hook_args_kwargs
 
-class MetaTest(type):
+class MultiTest(type):
     '''Spawns multiple tests for every `with_combined` decorated method in subtyped class.
     Adds test_ prefix to each method, so it can be recognized as a test'''
     def __new__(cls, name, bases, attrs):
         for method in attrs.values():
-            if callable(method) and hasattr(method, 'metatest_params'):
-                for test_args, test_kwargs in mix_params(method.metatest_params):
+            if callable(method) and hasattr(method, '_metatest_params'):
+                for test_args, test_kwargs in mix_params(method._metatest_params):
                     # Closure here, using default args trick!!!
                     def actual_test(self, ar=test_args, kw=test_kwargs):
                         return method(self, *ar, **kw)
@@ -78,20 +79,20 @@ class MetaTest(type):
                             ', '.join(str(k)+'='+str(v) for k,v in test_kwargs.items()))
                     actual_test.__name__ = method_name
                     attrs[method_name] = actual_test
-        return super(MetaTest, cls).__new__(cls, name, bases, attrs)
+        return super(MultiTest, cls).__new__(cls, name, bases, attrs)
 
 if __name__ == '__main__':
     # Usage example:
-    class SuiteExample(TestCase):
-        __metaclass__ = MetaTest # forces use of test generator
+    class SuiteExample(unittest.TestCase):
+        __metaclass__ = MultiTest # forces use of test generator
         # runTest = lambda *args: True # for debugging purposes only
-    
+
         def setUp(self):
             print '\nrunning setup'
-    
+
         def tearDown(self):
             print '\ndoing cleanup after test'
-        
+
         # Decorator means: produce 18 tests, each containing one method call
         # e.g. (the 1st test): steps2execute(self, 1, col='a', extra='+')
         # or (the 18th test): steps2execute(self, 3, col='c', extra='-')
@@ -100,10 +101,10 @@ if __name__ == '__main__':
             '''test steps'''
             print 'doing some steps with: row='+str(row)+', col='+col+', extra='+extra
             self.assertFalse(row*col+extra)
-    
+
     # Just a dummy test suite without decorators:
-    class T2(TestCase):
+    class T2(unittest.TestCase):
         def test_case_two(self):
             assert True
-            
+
     unittest.main()
