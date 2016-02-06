@@ -22,19 +22,24 @@ For example: Testing all combinations of A=(0,1,2) and B=['a','b','c'] would req
 Copy-pasting, or using nose generator plugin might sometimes not be an option.
 
 So here's the solution:
-1) Import MultiTest from this file.
-2) Create a test class with `__metaclass__ = MultiTest`
+1) Import MultiTestMeta (or MultiTestMixin) from this file.
+2) Create a test class with `__metaclass__ = MultiTest` (or inherit it from MultiTestMixin)
 3) Inside it create test case methods that accept extra params for A and B
 and decorate them as follows:
 
 @with_combined(A=[0,1,2], B='abc')
 def method(self, A, B):...
 
-Note: that extra params after `self` have to conform the one's in decorator.
+Note1: that extra params after `self` have to conform the one's in decorator.
 Note2: these do NOT HAVE to be only the named params, just make sure that their
-amount and naming fit `method` arguments.
+    amount and naming fit `method` arguments.
 Note3: there can be multiple decorated test methods in each test class.
-Note4: no need for `test_` prefix, our metaclass will add that automatically.
+Note4: no need for `test_` prefix, our metaclass will add that automatically
+    (this way we make sure that unittest will not try to mess with our
+    decorated test-methods and their "missing" extra params).
+Note5: these generated tests CAN BE RUN SEPARATELY as if they really
+    exist in the file (just make sure shell won't try to interpret spaces
+    in generated method name, i.e. place qoutes or backslashes where needed).
 
 That's all. Our metaclass will then spawn extra 9 methods each containing
 a `method` call, but with different param combinations (as shown below):
@@ -64,7 +69,7 @@ def with_combined(*args, **kwargs):
         return method
     return hook_args_kwargs
 
-class MultiTest(type):
+class MultiTestMeta(type):
     '''Spawns multiple tests for every `with_combined` decorated method in subtyped class.
     Adds test_ prefix to each method, so it can be recognized as a test'''
     def __new__(cls, name, bases, attrs):
@@ -79,12 +84,17 @@ class MultiTest(type):
                             ', '.join(str(k)+'='+str(v) for k,v in test_kwargs.items()))
                     actual_test.__name__ = method_name
                     attrs[method_name] = actual_test
-        return super(MultiTest, cls).__new__(cls, name, bases, attrs)
+        return super(MultiTestMeta, cls).__new__(cls, name, bases, attrs)
+
+class MultiTestMixin(object):
+    '''Enables spawning multiple tests methods via with_combined
+    decorator via inheritance'''
+    __metaclass__ = MultiTestMeta
 
 if __name__ == '__main__':
     # Usage example:
-    class SuiteExample(unittest.TestCase):
-        __metaclass__ = MultiTest # forces use of test generator
+    class SuiteExample(unittest.TestCase, MultiTestMixin):
+        # __metaclass__ = MultiTestMeta # forces use of test generator
         # runTest = lambda *args: True # for debugging purposes only
 
         def setUp(self):
