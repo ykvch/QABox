@@ -47,6 +47,8 @@ test_method(A=1, B='a'); test_method(A=1, B='b'); ... test_method(A=2, B='c');
 
 Should work fine with python -m unittest your_generated_tests_file
 OR with nose tests runner.
+
+Any questions? Contact me on github. User: yan123
 '''
 
 def mix_params(args_kwargs):
