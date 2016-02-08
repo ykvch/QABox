@@ -81,9 +81,9 @@ class MultiTestMeta(type):
                     def actual_test(self, ar=test_args, kw=test_kwargs):
                         return method(self, *ar, **kw)
                     method_name = ('test_'+ method.__name__ +
-                            ' ' if (test_args or test_kwargs) else '' +
+                            (' ' if test_args or test_kwargs else '') +
                             ', '.join(str(a) for a in test_args) +
-                            ', ' if (test_args and test_kwargs) else '' +
+                            (', ' if test_args and test_kwargs else '') +
                             ', '.join(str(k)+'='+str(v) for k,v in test_kwargs.items()))
                     actual_test.__name__ = method_name
                     attrs[method_name] = actual_test
