@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import itertools
+import string
 
 '''
 Rationale:
@@ -78,8 +79,13 @@ class MultiTestMeta(type):
             if callable(method) and hasattr(method, '_metatest_params'):
                 for test_args, test_kwargs in mix_params(method._metatest_params):
                     # Closure here, using default args trick!!!
-                    def actual_test(self, ar=test_args, kw=test_kwargs):
-                        return method(self, *ar, **kw)
+                    def actual_test(self, me=method, ar=test_args, kw=test_kwargs):
+                        return me(self, *ar, **kw)
+
+                    sub_dict = dict(('arg'+str(num), val) for num, val in enumerate(test_args))
+                    sub_dict.update(test_kwargs)
+                    actual_test.__doc__ = string.Template(method.__doc__).safe_substitute(sub_dict)
+
                     method_name = ('test_'+ method.__name__ +
                             (' ' if test_args or test_kwargs else '') +
                             ', '.join(str(a) for a in test_args) +
@@ -87,6 +93,7 @@ class MultiTestMeta(type):
                             ', '.join(str(k)+'='+str(v) for k,v in test_kwargs.items()))
                     actual_test.__name__ = method_name
                     attrs[method_name] = actual_test
+
         return super(MultiTestMeta, cls).__new__(cls, name, bases, attrs)
 
 class MultiTestMixin(object):
@@ -113,7 +120,7 @@ if __name__ == '__main__':
         # or (the 18th test): steps2execute(self, 3, col='c', extra='-')
         @with_combined((1,2,3), col=['a','b','c'], extra='+-')
         def steps2execute(self, row, col, extra):
-            '''test steps'''
+            '''test steps *args[0]=$arg0 col=$col extra=$extra params'''
             print 'doing some steps with: row='+str(row)+', col='+col+', extra='+extra
             self.assertFalse(row*col+extra)
 
