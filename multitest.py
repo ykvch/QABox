@@ -24,8 +24,8 @@ Copy-pasting, or using nose generator plugin might sometimes not be an option.
 So here's the solution:
 1) Import MultiTestMeta (or MultiTestMixin) from this file.
 2) Create a test class with `__metaclass__ = MultiTest` (or inherit it from MultiTestMixin)
-3) Inside it create test case methods that accept extra params for A and B
-and decorate them as follows:
+3) Inside it create test case methods (but without test_ prefix) that accept extra
+params for A and B and decorate them as follows:
 
 @with_combined(A=[0,1,2], B='abc')
 def method(self, A, B):...
@@ -34,12 +34,16 @@ Note1: that extra params after `self` have to conform the one's in decorator.
 Note2: these do NOT HAVE to be only the named params, just make sure that their
     amount and naming fit `method` arguments.
 Note3: there can be multiple decorated test methods in each test class.
-Note4: no need for `test_` prefix, our metaclass will add that automatically
+Note4: Avoid `test_` prefix, our metaclass will add that automatically
     (this way we make sure that unittest will not try to mess with our
     decorated test-methods and their "missing" extra params).
 Note5: these generated tests CAN BE RUN SEPARATELY as if they really
     exist in the file (just make sure shell won't try to interpret spaces
     in generated method name, i.e. place qoutes or backslashes where needed).
+Note6: method docstring gets processed via string.Template substitution.
+    So positional method params can be referred as arg0, arg1, arg2...
+    And named by their respective name. Please see the example in __main__
+
 
 That's all. Our metaclass will then spawn extra 9 methods each containing
 a `method` call, but with different param combinations (as shown below):
@@ -75,12 +79,17 @@ class MultiTestMeta(type):
     '''Spawns multiple tests for every `with_combined` decorated method in subtyped class.
     Adds test_ prefix to each method, so it can be recognized as a test'''
     def __new__(cls, name, bases, attrs):
-        for method in attrs.values():
+        for name, method in attrs.items():
             if callable(method) and hasattr(method, '_metatest_params'):
                 for test_args, test_kwargs in mix_params(method._metatest_params):
                     # Closure here, using default args trick!!!
-                    def actual_test(self, me=method, ar=test_args, kw=test_kwargs):
-                        return me(self, *ar, **kw)
+                    def actual_test(self, na=name, ar=test_args, kw=test_kwargs):
+                        return getattr(self, na)(*ar, **kw)
+                    # Using above instead of below to grab method by its name later
+                    # on in case it gets wrapped by some other decorator (and thus
+                    # current method reference would be no longer valid/desired one).
+                    # def actual_test(self, me=method, ar=test_args, kw=test_kwargs):
+                    #     return me(self, *ar, **kw)
 
                     sub_dict = dict(('arg'+str(num), val) for num, val in enumerate(test_args))
                     sub_dict.update(test_kwargs)
@@ -92,6 +101,7 @@ class MultiTestMeta(type):
                             (', ' if test_args and test_kwargs else '') +
                             ', '.join(str(k)+'='+str(v) for k,v in test_kwargs.items()))
                     actual_test.__name__ = method_name
+                    actual_test.__dict__ = method.__dict__
                     attrs[method_name] = actual_test
 
         return super(MultiTestMeta, cls).__new__(cls, name, bases, attrs)
