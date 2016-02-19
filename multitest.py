@@ -78,7 +78,7 @@ def with_combined(*args, **kwargs):
 class MultiTestMeta(type):
     '''Spawns multiple tests for every `with_combined` decorated method in subtyped class.
     Adds test_ prefix to each method, so it can be recognized as a test'''
-    def __new__(cls, name, bases, attrs):
+    def __new__(cls, cls_name, bases, attrs):
         for name, method in attrs.items():
             if callable(method) and hasattr(method, '_metatest_params'):
                 for test_args, test_kwargs in mix_params(method._metatest_params):
@@ -95,16 +95,16 @@ class MultiTestMeta(type):
                     sub_dict.update(test_kwargs)
                     actual_test.__doc__ = string.Template(method.__doc__).safe_substitute(sub_dict)
 
-                    method_name = ('test_'+ method.__name__ +
+                    actual_name = ('test_'+ name +
                             (' ' if test_args or test_kwargs else '') +
                             ', '.join(str(a) for a in test_args) +
                             (', ' if test_args and test_kwargs else '') +
                             ', '.join(str(k)+'='+str(v) for k,v in test_kwargs.items()))
-                    actual_test.__name__ = method_name
+                    actual_test.__name__ = actual_name
                     actual_test.__dict__ = method.__dict__
-                    attrs[method_name] = actual_test
+                    attrs[actual_name] = actual_test
 
-        return super(MultiTestMeta, cls).__new__(cls, name, bases, attrs)
+        return super(MultiTestMeta, cls).__new__(cls, cls_name, bases, attrs)
 
 class MultiTestMixin(object):
     '''Enables spawning multiple tests methods via with_combined
