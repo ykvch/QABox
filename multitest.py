@@ -79,11 +79,11 @@ class MultiTestMeta(type):
     '''Spawns multiple tests for every `with_combined` decorated method in subtyped class.
     Adds test_ prefix to each method, so it can be recognized as a test'''
     def __new__(cls, name, bases, attrs):
-        for name, method in attrs.items():
+        for mname, method in attrs.items():
             if callable(method) and hasattr(method, '_metatest_params'):
                 for test_args, test_kwargs in mix_params(method._metatest_params):
                     # Closure here, using default args trick!!!
-                    def actual_test(self, na=name, ar=test_args, kw=test_kwargs):
+                    def actual_test(self, na=mname, ar=test_args, kw=test_kwargs):
                         return getattr(self, na)(*ar, **kw)
                     # Using above instead of below to grab method by its name later
                     # on in case it gets wrapped by some other decorator (and thus
