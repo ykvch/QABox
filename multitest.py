@@ -85,8 +85,8 @@ class MultiTestMeta(type):
                     # Closure here, using default args trick!!!
                     def actual_test(self, na=name, ar=test_args, kw=test_kwargs):
                         return getattr(self, na)(*ar, **kw)
-                    # Using above instead of below to grab method by its name later
-                    # on in case it gets wrapped by some other decorator (and thus
+                    # Using above instead of below to grab method by its name later on
+                    # just in case it gets wrapped by some other decorator (and thus
                     # current method reference would be no longer valid/desired one).
                     # def actual_test(self, me=method, ar=test_args, kw=test_kwargs):
                     #     return me(self, *ar, **kw)
