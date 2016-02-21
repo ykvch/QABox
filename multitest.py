@@ -99,7 +99,7 @@ class MultiTestMeta(type):
                             (' ' if test_args or test_kwargs else '') +
                             ', '.join(str(a) for a in test_args) +
                             (', ' if test_args and test_kwargs else '') +
-                            ', '.join(str(k)+'='+str(v) for k,v in test_kwargs.items()))
+                            ', '.join(str(k)+'='+str(v) for k,v in sorted(test_kwargs.items())))
                     actual_test.__name__ = actual_name
                     actual_test.__dict__ = method.__dict__
                     attrs[actual_name] = actual_test
