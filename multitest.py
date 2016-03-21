@@ -57,7 +57,7 @@ Any questions? Contact me on github. User: yan123
 '''
 
 # Make string a valid python name
-pystr = lambda n: ''.join(x if x.isalnum() else '_' for x in t)
+pystr = lambda n: ''.join(x if x.isalnum() else '_' for x in n)
 
 def mix_params(args_kwargs):
     '''Takes args/kwargs tuple and returns all param combinations inside.
