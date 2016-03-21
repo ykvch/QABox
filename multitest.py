@@ -56,6 +56,9 @@ OR with nose tests runner.
 Any questions? Contact me on github. User: yan123
 '''
 
+# Make string a valid python name
+pystr = lambda n: ''.join(x if x.isalnum() else '_' for x in t)
+
 def mix_params(args_kwargs):
     '''Takes args/kwargs tuple and returns all param combinations inside.
     Each item inside args or kwargs is expected to be an iterable
@@ -96,10 +99,11 @@ class MultiTestMeta(type):
                     actual_test.__doc__ = string.Template(method.__doc__).safe_substitute(sub_dict)
 
                     actual_name = ('test_'+ name +
-                            (' ' if test_args or test_kwargs else '') +
-                            ', '.join(str(a) for a in test_args) +
-                            (', ' if test_args and test_kwargs else '') +
-                            ', '.join(str(k)+'='+str(v) for k,v in sorted(test_kwargs.items())))
+                            ('_' if test_args or test_kwargs else '') +
+                            '_'.join(str(a) for a in test_args) +
+                            ('_' if test_args and test_kwargs else '') +
+                            '_'.join(pystr(k)+'_'+pystr(v) for k,v in sorted(test_kwargs.items())))
+                    # TODO: make sure method names do NOT repeat.
                     actual_test.__name__ = actual_name
                     actual_test.__dict__ = method.__dict__
                     attrs[actual_name] = actual_test
