@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import itertools
-import string
-
 '''
 Rationale:
 
@@ -56,8 +53,17 @@ OR with nose tests runner.
 Any questions? Contact me on github. User: yan123
 '''
 
-# Make string a valid python name
-pystr = lambda n: ''.join(x if x.isalnum() else '_' for x in n)
+import itertools
+import string
+
+# Word representation for certain literals.
+# Some symbols inspired by: https://dev.w3.org/html5/html-author/charref
+AS_WORD = {'.': 'dot', '-': 'minus', '+': 'plus', '#': 'num', '!': 'excl',
+        '"': 'quot', '$': 'dollar', '%': 'percnt', '&': 'amp', '/': 'sol',
+        '\\': 'bsol', '=': 'eq', ',': 'comma', ';': 'semi', ':': 'colon'}
+
+# Make n a valid python name
+pystr = lambda n: ''.join(x if x.isalnum() else AS_WORD.get(x, '_') for x in str(n))
 
 def mix_params(args_kwargs):
     '''Takes args/kwargs tuple and returns all param combinations inside.
@@ -80,12 +86,13 @@ def with_combined(*args, **kwargs):
 
 class MultiTestMeta(type):
     '''Spawns multiple tests for every `with_combined` decorated method in subtyped class.
-    Adds test_ prefix to each method, so it can be recognized as a test'''
-    def __new__(cls, cls_name, bases, attrs):
+    Adds test_ prefix to each spawned method, to be recognized by unittest (and others) as
+    a valid test scenario.'''
+    def __new__(mcs, cls_name, bases, attrs):
         for name, method in attrs.items():
             if callable(method) and hasattr(method, '_metatest_params'):
                 for test_args, test_kwargs in mix_params(method._metatest_params):
-                    # Closure here, using default args trick!!!
+                    # Closure here, using default args trick:
                     def actual_test(self, na=name, ar=test_args, kw=test_kwargs):
                         return getattr(self, na)(*ar, **kw)
                     # Using above instead of below to grab method by its name later on
@@ -94,21 +101,33 @@ class MultiTestMeta(type):
                     # def actual_test(self, me=method, ar=test_args, kw=test_kwargs):
                     #     return me(self, *ar, **kw)
 
+                    # Substitute template values in docstring:
                     sub_dict = dict(('arg'+str(num), val) for num, val in enumerate(test_args))
                     sub_dict.update(test_kwargs)
                     actual_test.__doc__ = string.Template(method.__doc__).safe_substitute(sub_dict)
 
                     actual_name = ('test_'+ name +
                             ('_' if test_args or test_kwargs else '') +
-                            '_'.join(str(a) for a in test_args) +
+                            '_'.join(pystr(a) for a in test_args) +
                             ('_' if test_args and test_kwargs else '') +
                             '_'.join(pystr(k)+'_'+pystr(v) for k,v in sorted(test_kwargs.items())))
-                    # TODO: make sure method names do NOT repeat.
-                    actual_test.__name__ = actual_name
-                    actual_test.__dict__ = method.__dict__
+
+                    # Make sure method name above is unique:
+                    if actual_name in attrs:
+                        prefix_name = actual_name
+                        for i in range(1023):
+                            actual_name = prefix_name + '_' + str(i)
+                            if actual_name not in attrs:
+                                break
+                        else:
+                            raise RuntimeError('1024 methods with similar name '
+                                    'already exist, please consider refactoring')
+
+                    actual_test.func_name = actual_name
+                    actual_test.func_dict = method.func_dict
                     attrs[actual_name] = actual_test
 
-        return super(MultiTestMeta, cls).__new__(cls, cls_name, bases, attrs)
+        return super(MultiTestMeta, mcs).__new__(mcs, cls_name, bases, attrs)
 
 class MultiTestMixin(object):
     '''Enables spawning multiple tests methods via with_combined
@@ -131,8 +150,8 @@ if __name__ == '__main__':
 
         # Decorator means: produce 18 tests, each containing one method call
         # e.g. (the 1st test): steps2execute(self, 1, col='a', extra='+')
-        # or (the 18th test): steps2execute(self, 3, col='c', extra='-')
-        @with_combined((1,2,3), col=['a','b','c'], extra='+-')
+        # till (the 18th test): steps2execute(self, 3, col='c', extra='-')
+        @with_combined((1, 2, 3.456), col=['a', 'b', 'c'], extra='+-')
         def steps2execute(self, row, col, extra):
             '''test steps *args[0]=$arg0 col=$col extra=$extra params'''
             print 'doing some steps with: row='+str(row)+', col='+col+', extra='+extra
