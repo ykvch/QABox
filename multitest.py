@@ -31,18 +31,17 @@ Note1: that extra params after `self` have to conform the one's in decorator.
 Note2: these do NOT HAVE to be only the named params, just make sure that their
     amount and naming fit `method` arguments.
 Note3: there can be multiple decorated test methods in each test class.
-Note4: Avoid `test_` prefix, our metaclass will add that automatically
+Note4: AVOID `test_` prefix, our metaclass will add that automatically
     (this way we make sure that unittest will not try to mess with our
     decorated test-methods and their "missing" extra params).
-Note5: these generated tests CAN BE RUN SEPARATELY as if they really
-    exist in the file (just make sure shell won't try to interpret spaces
-    in generated method name, i.e. place qoutes or backslashes where needed).
+Note5: these generated tests CAN BE RUN SEPARATELY as if they really exist
+    in the file (proper python methodnames are generated upon param values).
 Note6: method docstring gets processed via string.Template substitution.
     So positional method params can be referred as arg0, arg1, arg2...
     And named by their respective name. Please see the example in __main__
 
 
-That's all. Our metaclass will then spawn extra 9 methods each containing
+That's all. Our metaclass will spawn extra 9 methods each containing
 a `method` call, but with different param combinations (as shown below):
 test_method(A=0, B='a'); test_method(A=0, B='b'); test_method(A=0, B='c');
 test_method(A=1, B='a'); test_method(A=1, B='b'); ... test_method(A=2, B='c');
@@ -58,11 +57,11 @@ import string
 
 # Word representation for certain literals.
 # Some symbols inspired by: https://dev.w3.org/html5/html-author/charref
-AS_WORD = {'.': 'dot', '-': 'minus', '+': 'plus', '#': 'num', '!': 'excl',
+AS_WORD = {'.': '_', '-': 'minus', '+': 'plus', '#': 'num', '!': 'excl',
         '"': 'quot', '$': 'dollar', '%': 'percnt', '&': 'amp', '/': 'sol',
         '\\': 'bsol', '=': 'eq', ',': 'comma', ';': 'semi', ':': 'colon'}
 
-# Make n a valid python name
+# Make up a valid python name
 pystr = lambda n: ''.join(x if x.isalnum() else AS_WORD.get(x, '_') for x in str(n))
 
 def mix_params(args_kwargs):
@@ -95,11 +94,9 @@ class MultiTestMeta(type):
                     # Closure here, using default args trick:
                     def actual_test(self, na=name, ar=test_args, kw=test_kwargs):
                         return getattr(self, na)(*ar, **kw)
-                    # Using above instead of below to grab method by its name later on
-                    # just in case it gets wrapped by some other decorator (and thus
-                    # current method reference would be no longer valid/desired one).
-                    # def actual_test(self, me=method, ar=test_args, kw=test_kwargs):
-                    #     return me(self, *ar, **kw)
+                    # Using above instead of `return me(self, *ar, **kw)` to grab method by
+                    # its name later on, just in case it gets wrapped by some other decorator
+                    # (and thus current method reference would be no longer valid/desired one).
 
                     # Substitute template values in docstring:
                     sub_dict = dict(('arg'+str(num), val) for num, val in enumerate(test_args))
@@ -112,7 +109,7 @@ class MultiTestMeta(type):
                             ('_' if test_args and test_kwargs else '') +
                             '_'.join(pystr(k)+'_'+pystr(v) for k,v in sorted(test_kwargs.items())))
 
-                    # Make sure method name above is unique:
+                    # Make sure actual_name is unique:
                     if actual_name in attrs:
                         prefix_name = actual_name
                         for i in range(1023):
@@ -122,7 +119,7 @@ class MultiTestMeta(type):
                         else:
                             raise RuntimeError('1024 methods with similar name '
                                     'already exist, please consider refactoring')
-
+                    # assuming proper function, possibly __dict__, __name__ would be preferable:
                     actual_test.func_name = actual_name
                     actual_test.func_dict = method.func_dict
                     attrs[actual_name] = actual_test
@@ -153,7 +150,7 @@ if __name__ == '__main__':
         # till (the 18th test): steps2execute(self, 3, col='c', extra='-')
         @with_combined((1, 2, 3.456), col=['a', 'b', 'c'], extra='+-')
         def steps2execute(self, row, col, extra):
-            '''test steps *args[0]=$arg0 col=$col extra=$extra params'''
+            '''Test steps with *args[0]=$arg0 col=$col extra=$extra params.'''
             print 'doing some steps with: row='+str(row)+', col='+col+', extra='+extra
             self.assertFalse(row*col+extra)
 
