@@ -62,11 +62,10 @@ AS_WORD = {'.': '_', '-': 'minus', '+': 'plus', '#': 'num', '!': 'excl',
 # Make up a valid python name
 pystr = lambda n: ''.join(x if x.isalnum() else AS_WORD.get(x, '_') for x in str(n))
 
-def mix_params(args_kwargs):
+def mix_params(args, kwargs):
     '''Takes args/kwargs tuple and returns all param combinations inside.
     Each item inside args or kwargs is expected to be an iterable
     of all desired values for that certain parameter'''
-    args, kwargs = args_kwargs
     args_len = len(args)
     # values() is guaranteed to have the same order as keys(), we exploit that below
     for i in itertools.product(*itertools.chain(args, kwargs.values())):
@@ -77,7 +76,7 @@ def with_combined(*args, **kwargs):
     _metatest_params is a marker for MultiTest class to see which
     methods have to be spawned into multiple tests'''
     def hook_args_kwargs(method):
-        method._metatest_params = (args, kwargs)
+        method._metatest_params = mix_params(args, kwargs)
         return method
     return hook_args_kwargs
 
@@ -90,7 +89,7 @@ class MultiTestMeta(type):
                callable(v) and hasattr(v, '_metatest_params')]
         for name, method in marked_tests:
             del attrs[name] # remove original test method not to mess with test-runner
-            for test_args, test_kwargs in mix_params(method._metatest_params):
+            for test_args, test_kwargs in method._metatest_params:
                 # Closure here, using default args trick:
                 def actual_test(self, me=method, ar=test_args, kw=test_kwargs):
                     return me(self, *ar, **kw)
