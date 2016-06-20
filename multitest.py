@@ -71,14 +71,30 @@ def mix_params(args, kwargs):
     for i in itertools.product(*itertools.chain(args, kwargs.values())):
         yield tuple(i[:args_len]), dict(zip(kwargs.keys(), i[args_len:]))
 
-def with_combined(*args, **kwargs):
+def zip_params(args, kwargs):
+    '''For every param inside args/kwargs takes n-th element and builds up an
+    args/kwargs tuple. Just as zip() does with iterables'''
+    zipped_args = itertools.izip(*args)
+    zipped_kwargs = (dict(zip(kwargs.keys(), v)) for v in itertools.izip(*kwargs.values()))
+    for one_args_kwargs in itertools.izip(zipped_args, zipped_kwargs):
+        yield one_args_kwargs
+
+def kwargs_params(list_of_kwargs):
+    for k in list_of_kwargs:
+        yield (), k
+
+def with_(mix_method, args, kwargs):
     '''Decorator. Adds _metatest_params=(args, kwargs) field to decorated method.
     _metatest_params is a marker for MultiTest class to see which
     methods have to be spawned into multiple tests'''
     def hook_args_kwargs(method):
-        method._metatest_params = mix_params(args, kwargs)
+        method._metatest_params = mix_method(args, kwargs)
         return method
     return hook_args_kwargs
+
+with_combined = lambda *args, **kwargs: with_(mix_params, args, kwargs)
+with_zipped = lambda *args, **kwargs: with_(zip_params, args, kwargs)
+with_kwargs = lambda *list_of_kwargs: with_(kwargs_params, (), list_of_kwargs)
 
 class MultiTestMeta(type):
     '''Spawns multiple tests for every `with_combined` decorated method in subtyped class.
