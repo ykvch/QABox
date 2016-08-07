@@ -79,22 +79,22 @@ def zip_params(args, kwargs):
     for one_args_kwargs in itertools.izip(zipped_args, zipped_kwargs):
         yield one_args_kwargs
 
-def kwargs_params(_, list_of_kwargs):
+def kwargs_params(list_of_kwargs, _):
     for k in list_of_kwargs:
         yield (), k
 
-def with_(mix_method, args, kwargs):
+def attach_params(mix_method, args, kwargs):
     '''Decorator. Adds _metatest_params=(args, kwargs) field to decorated method.
     _metatest_params is a marker for MultiTest class to see which
     methods have to be spawned into multiple tests'''
-    def hook_args_kwargs(method):
+    def wrapper(method):
         method._metatest_params = mix_method(args, kwargs)
         return method
-    return hook_args_kwargs
+    return wrapper
 
-with_combined = lambda *args, **kwargs: with_(mix_params, args, kwargs)
-with_zipped = lambda *args, **kwargs: with_(zip_params, args, kwargs)
-with_kwargs = lambda *list_of_kwargs: with_(kwargs_params, (), list_of_kwargs)
+with_combined = lambda *args, **kwargs: attach_params(mix_params, args, kwargs)
+with_zipped = lambda *args, **kwargs: attach_params(zip_params, args, kwargs)
+with_kwargs = lambda *list_of_kwargs: attach_params(kwargs_params, list_of_kwargs, None)
 
 class MultiTestMeta(type):
     '''Spawns multiple tests for every `with_combined` decorated method in subtyped class.
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     import unittest
 
     class SuiteExample(unittest.TestCase, MultiTestMixin):
-        # __metaclass__ = MultiTestMeta # forces use of test generator
+        # __metaclass__ = MultiTestMeta # alternative way to use test generator
         # runTest = lambda *args: True # for debugging purposes only
 
         def setUp(self):
