@@ -79,7 +79,7 @@ def zip_params(args, kwargs):
     for one_args_kwargs in itertools.izip(zipped_args, zipped_kwargs):
         yield one_args_kwargs
 
-def kwargs_params(list_of_kwargs):
+def kwargs_params(_, list_of_kwargs):
     for k in list_of_kwargs:
         yield (), k
 
