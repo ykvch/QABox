@@ -96,6 +96,21 @@ with_combined = lambda *args, **kwargs: attach_params(mix_params, args, kwargs)
 with_zipped = lambda *args, **kwargs: attach_params(zip_params, args, kwargs)
 with_kwargs = lambda *list_of_kwargs: attach_params(kwargs_params, list_of_kwargs, None)
 
+def explain(*args, **kwargs):
+    '''
+    Decorator
+    test_method args/kwargs will be used as keys for `meaning_dict`
+    Inside test methods args/kwargs will be converted (at least try) to their
+    appropriate values from the `meaning_dict`
+    Also EXTRA template substitution is done with meaning_dict (if given),
+    so arg values can be `explained` by using $$$ notation
+    '''
+    def wrapper(method):
+        meaning_dict = dict(*args, **kwargs)
+        method._multitest_explain = meaning_dict
+        return method
+    return wrapper
+
 class MultiTestMeta(type):
     '''Spawns multiple tests for every `with_combined` decorated method in subtyped class.
     Removes original decorated method from class dictionary.'''
@@ -106,14 +121,27 @@ class MultiTestMeta(type):
         for name, method in marked_tests:
             del attrs[name] # remove original test method not to mess with test-runner
             for test_args, test_kwargs in method._metatest_params:
+
+                if hasattr(method, '_multitest_explain'):
+                    inside_args = tuple(method._multitest_explain.get(a, a) for a in test_args)
+                    inside_kwargs = {k: method._multitest_explain.get(v, v) for k, v in test_kwargs.iteritems()}
+                else:
+                    inside_args = test_args
+                    inside_kwargs = test_kwargs
+
                 # Closure here, using default args trick:
-                def actual_test(self, me=method, ar=test_args, kw=test_kwargs):
+                def actual_test(self, me=method, ar=inside_args, kw=inside_kwargs):
                     return me(self, *ar, **kw)
 
                 # Substitute template values in docstring:
                 sub_dict = dict(('arg'+str(num), val) for num, val in enumerate(test_args))
                 sub_dict.update(test_kwargs)
                 actual_test.__doc__ = string.Template(method.__doc__).safe_substitute(sub_dict)
+
+                # Provide another substitution in docstring for `explain` decorator:
+                if hasattr(method, '_multitest_explain'):
+                    actual_test.__doc__ = string.Template(actual_test.__doc__
+                            ).safe_substitute(method._multitest_explain)
 
                 actual_name = (name +
                         ('_' if test_args or test_kwargs else '') +
@@ -169,6 +197,16 @@ if __name__ == '__main__':
         def test_not_decorated(self):
             print 'not decorated test'
             self.assertTrue(True)
+
+
+        @with_combined(x_arg=['short', 'long'], y_arg=['digits', 'dots'])
+        @explain(short='a', long='aaaaa', digits='12345', dots='.:')
+        def test_with_resource_dict(self, x_arg, y_arg):
+            '''Test with $x_arg, namely: $$$x_arg and $y_arg, which is $$$y_arg'''
+            print self
+            print 'x_arg:', x_arg
+            print 'y_arg:', y_arg
+            assert False
 
     # Just a dummy test suite without decorators:
     class T2(unittest.TestCase):
