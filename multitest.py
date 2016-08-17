@@ -53,9 +53,20 @@ Any questions? Contact me on github. User: yan123
 import itertools
 from string import Formatter
 
-FORMAT = Formatter()
-def vformat(fmt_string, args, kwargs): # vformat as standalone function
-    return FORMAT.vformat(fmt_string, args, kwargs)
+class ApatheticFormatter(Formatter):
+    '''Formatter that tries to ignore errors and put
+    unresolved placeholders back in place'''
+    def get_value(self, fname, args, kwargs):
+        try:
+            return args[fname]
+        except (TypeError, IndexError):
+            pass
+        try:
+            return kwargs[fname]
+        except KeyError:
+            return '{{{}}}'.format(fname)
+
+FMT = ApatheticFormatter()
 
 # Word representation for certain literals.
 # Some symbols inspired by: https://dev.w3.org/html5/html-author/charref
@@ -65,12 +76,6 @@ AS_WORD = {'.': '_', '-': 'minus', '+': 'plus', '#': 'num', '!': 'excl',
 
 # Make up a valid python name
 pystr = lambda n: ''.join(x if x.isalnum() else AS_WORD.get(x, '_') for x in str(n))
-
-class FallbackDict(dict):
-    '''Returns `{key}` if key is missing'''
-    def __missing__(self, key):
-        return '{{{}}}'.format(key)
-
 
 def mix_params(args, kwargs):
     '''Takes args/kwargs tuple and returns all param combinations inside.
@@ -144,15 +149,12 @@ class MultiTestMeta(type):
                 def actual_test(self, me=method, ar=inside_args, kw=inside_kwargs):
                     return me(self, *ar, **kw)
 
-                # Using FallbackDict to push placeholder back to string
-                # if substitution not found in appropriate .format(**kwargs)
                 # Substitute template values in docstring:
-                actual_test.__doc__ = vformat(method.__doc__, test_args,
-                        FallbackDict(test_kwargs))
+                actual_test.__doc__ = FMT.vformat(method.__doc__, test_args, test_kwargs)
                 # Provide another substitution for `explain` decorator:
                 if hasattr(method, '_multitest_explain'):
-                    actual_test.__doc__ = vformat(actual_test.__doc__, (),
-                            FallbackDict(method._multitest_explain))
+                    actual_test.__doc__ = FMT.vformat(actual_test.__doc__, (),
+                            method._multitest_explain)
 
                 actual_name = (name +
                         ('_' if test_args or test_kwargs else '') +
