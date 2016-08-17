@@ -51,7 +51,11 @@ Any questions? Contact me on github. User: yan123
 '''
 
 import itertools
-import string
+from string import Formatter
+
+FORMAT = Formatter()
+def vformat(fmt_string, args, kwargs): # vformat as standalone function
+    return FORMAT.vformat(fmt_string, args, kwargs)
 
 # Word representation for certain literals.
 # Some symbols inspired by: https://dev.w3.org/html5/html-author/charref
@@ -61,6 +65,12 @@ AS_WORD = {'.': '_', '-': 'minus', '+': 'plus', '#': 'num', '!': 'excl',
 
 # Make up a valid python name
 pystr = lambda n: ''.join(x if x.isalnum() else AS_WORD.get(x, '_') for x in str(n))
+
+class FallbackDict(dict):
+    '''Returns `{key}` if key is missing'''
+    def __missing__(self, key):
+        return '{{{}}}'.format(key)
+
 
 def mix_params(args, kwargs):
     '''Takes args/kwargs tuple and returns all param combinations inside.
@@ -102,14 +112,15 @@ def explain(*args, **kwargs):
     test_method args/kwargs will be used as keys for `meaning_dict`
     Inside test methods args/kwargs will be converted (at least try) to their
     appropriate values from the `meaning_dict`
-    Also EXTRA template substitution is done with meaning_dict (if given),
-    so arg values can be `explained` by using $$$ notation
+    Also EXTRA vformat substitution is done with meaning_dict (if given),
+    so arg values can be `explained` by using {{{}}} notation
     '''
     def wrapper(method):
         meaning_dict = dict(*args, **kwargs)
         method._multitest_explain = meaning_dict
         return method
     return wrapper
+
 
 class MultiTestMeta(type):
     '''Spawns multiple tests for every `with_combined` decorated method in subtyped class.
@@ -133,15 +144,15 @@ class MultiTestMeta(type):
                 def actual_test(self, me=method, ar=inside_args, kw=inside_kwargs):
                     return me(self, *ar, **kw)
 
+                # Using FallbackDict to push placeholder back to string
+                # if substitution not found in appropriate .format(**kwargs)
                 # Substitute template values in docstring:
-                sub_dict = dict(('arg'+str(num), val) for num, val in enumerate(test_args))
-                sub_dict.update(test_kwargs)
-                actual_test.__doc__ = string.Template(method.__doc__).safe_substitute(sub_dict)
-
-                # Provide another substitution in docstring for `explain` decorator:
+                actual_test.__doc__ = vformat(method.__doc__, test_args,
+                        FallbackDict(test_kwargs))
+                # Provide another substitution for `explain` decorator:
                 if hasattr(method, '_multitest_explain'):
-                    actual_test.__doc__ = string.Template(actual_test.__doc__
-                            ).safe_substitute(method._multitest_explain)
+                    actual_test.__doc__ = vformat(actual_test.__doc__, (),
+                            FallbackDict(method._multitest_explain))
 
                 actual_name = (name +
                         ('_' if test_args or test_kwargs else '') +
@@ -190,7 +201,7 @@ if __name__ == '__main__':
         # till (the 18th test): steps2execute(self, 3.456, col='c', extra='-')
         @with_combined((1, 2, 3.456), col=['a', 'b', 'c'], extra='+-')
         def test_steps2execute(self, row, col, extra):
-            '''Test steps with *args[0]=$arg0 col=$col extra=$extra params.'''
+            '''Test steps with *args[0]={0} col={col} extra={extra} params.'''
             print 'doing some steps with: row='+str(row)+', col='+col+', extra='+extra
             self.assertEquals(row*col+extra, 'cc+')
 
@@ -198,15 +209,13 @@ if __name__ == '__main__':
             print 'not decorated test'
             self.assertTrue(True)
 
-
-        @with_combined(x_arg=['short', 'long'], y_arg=['digits', 'dots'])
+        # Note the {WAT?} in docstring, we try to leave missing values untouched
+        @with_combined(linetype=['short', 'long'], prefix=['digits', 'dots'])
         @explain(short='a', long='aaaaa', digits='12345', dots='.:')
-        def test_with_resource_dict(self, x_arg, y_arg):
-            '''Test with $x_arg, namely: $$$x_arg and $y_arg, which is $$$y_arg'''
-            print self
-            print 'x_arg:', x_arg
-            print 'y_arg:', y_arg
-            assert False
+        def test_with_resource_dict(self, linetype, prefix):
+            '''Test{WAT?} {linetype} line {{{linetype}}} with {prefix} {{{prefix}}}'''
+            print prefix, linetype
+            self.assertEquals(prefix, linetype)
 
     # Just a dummy test suite without decorators:
     class T2(unittest.TestCase):
