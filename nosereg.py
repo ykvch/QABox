@@ -1,3 +1,6 @@
+#!/usr/bin/env
+# -*- coding: utf-8 -*-
+
 import nose
 from registry_plugin import RegistryClient
 
