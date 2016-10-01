@@ -4,6 +4,10 @@
 import sys
 import socket
 import asyncore
+import logging
+
+LOG = logging.getLogger('registry_server')
+logging.basicConfig(format='', level='INFO')
 
 MAGIC_SEQUENCE = 'thank you'
 
@@ -32,6 +36,7 @@ class RegHandler(asyncore.dispatcher_with_send):
         if not taken_already:
             self.master.registry.add(item)
         self.send('{0} {1:d}\n'.format(item, taken_already))
+        LOG.info('{0} {1}'.format(item, 'already taken' if taken_already else 'OK'))
 
 
 class RegServer(asyncore.dispatcher):
