@@ -7,7 +7,7 @@ import asyncore
 import logging
 
 LOG = logging.getLogger('registry_server')
-logging.basicConfig(format='', level='INFO')
+logging.basicConfig(level='INFO')
 
 MAGIC_SEQUENCE = 'thank you'
 
