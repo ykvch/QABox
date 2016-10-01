@@ -3,6 +3,7 @@
 
 import logging
 import os
+import fnmatch
 import socket
 from nose.plugins import Plugin
 
@@ -18,6 +19,7 @@ class RegistryClient(Plugin):
         self.sock = None
         host, port = options.registry_server.rsplit(':', 1)
         self.reg_addr = host, int(port)
+        self.pattern = options.registry_fnmatch
         self.connect_to_server()
 
     def connect_to_server(self):
@@ -37,14 +39,21 @@ class RegistryClient(Plugin):
                 dest='registry_server',
                 metavar='host:port',
                 help='Running registry server network address')
+        parser.add_option('--registry-fnmatch',
+                default=env.get('REGISTRY_FNMATCH', 'test*.py'),
+                dest='registry_fnmatch',
+                metavar='pattern',
+                help='Pattern to match for test-containing files')
 
     def finalize(self, result):
         self.sock.close()
 
     def wantFile(self, fname):
         bname = os.path.basename(fname)
-        self.sock.send(bname+'\n')
+        if not fnmatch.fnmatch(bname, self.pattern):
+            return False
 
+        self.sock.send(bname+'\n')
         data = resp = self.sock.recv(1024)
         while '\n' not in resp:
             resp = self.sock.recv(1024)
