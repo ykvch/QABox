@@ -7,7 +7,7 @@ import asyncore
 import logging
 
 LOG = logging.getLogger('registry_server')
-logging.basicConfig(level='INFO')
+logging.basicConfig(format='%(asctime)s:%(levelname)s:%(name)s: %(message)s', level='INFO')
 
 MAGIC_SEQUENCE = 'thank you'
 
@@ -36,7 +36,8 @@ class RegHandler(asyncore.dispatcher_with_send):
         if not taken_already:
             self.master.registry.add(item)
         self.send('{0} {1:d}\n'.format(item, taken_already))
-        LOG.info('{0} {1}'.format(item, 'already taken' if taken_already else 'OK'))
+        LOG.info('{0}: {1} {2}'.format(self.addr, item,
+                'already taken' if taken_already else 'OK'))
 
 
 class RegServer(asyncore.dispatcher):
@@ -53,7 +54,7 @@ class RegServer(asyncore.dispatcher):
         sock_addr = self.accept()
         if sock_addr is None: return
         sock, addr = sock_addr
-        print 'Incoming connection from %s' % repr(addr)
+        LOG.info('Incoming connection from {0}'.format(addr))
         RegHandler(sock, self)
 
 if __name__ == '__main__':
