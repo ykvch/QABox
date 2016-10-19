@@ -92,7 +92,7 @@ def zip_params(args, kwargs):
     zipped_args = itertools.izip(*args)
     zipped_kwargs = (dict(zip(kwargs.keys(), v)) for v in itertools.izip(*kwargs.values()))
     # {} fits perfect for both * and ** extraction
-    for one_args_kwargs in itertools.izip_longest(zipped_args, zipped_kwargs, {}):
+    for one_args_kwargs in itertools.izip_longest(zipped_args, zipped_kwargs, fillvalue={}):
         yield one_args_kwargs
 
 def kwargs_params(list_of_kwargs, _):
