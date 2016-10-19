@@ -59,11 +59,12 @@ class ApatheticFormatter(Formatter):
     def get_value(self, fname, args, kwargs):
         try:
             return args[fname]
-        except (TypeError, IndexError):
+        except (TypeError, IndexError, KeyError):
+        # KeyError is needed because we might get args as dict (see zip_params)
             pass
         try:
             return kwargs[fname]
-        except KeyError:
+        except KeyError: # unresolved, push placeholder back
             return '{{{}}}'.format(fname)
 
 FMT = ApatheticFormatter()
@@ -89,6 +90,7 @@ def mix_params(args, kwargs):
 def zip_params(args, kwargs):
     '''For every param inside args/kwargs takes n-th element and builds up an
     args/kwargs tuple. Just as zip() does with iterables'''
+    print '***', args, kwargs
     zipped_args = itertools.izip(*args)
     zipped_kwargs = (dict(zip(kwargs.keys(), v)) for v in itertools.izip(*kwargs.values()))
     # {} fits perfect for both * and ** extraction
@@ -151,7 +153,7 @@ class MultiTestMeta(type):
                     return me(self, *ar, **kw)
 
                 # Substitute template values in docstring:
-                actual_test.__doc__ = FMT.vformat(method.__doc__, test_args, test_kwargs)
+                actual_test.__doc__ = FMT.vformat(method.__doc__ or '', test_args, test_kwargs)
                 # Provide another substitution for `explain` decorator:
                 if hasattr(method, '_multitest_explain'):
                     actual_test.__doc__ = FMT.vformat(actual_test.__doc__, (),
@@ -219,6 +221,11 @@ if __name__ == '__main__':
             '''Test{WAT?} {linetype} line {{{linetype}}} with {prefix} {{{prefix}}}'''
             print prefix, linetype
             self.assertEquals(prefix, linetype)
+
+        @with_zipped(a=dict(q=1, w=2, e=3), b=(2,3,4,5))
+        def test_z(self, a, b):
+            '''Test {a} {b}'''
+            assert a == b
 
     # Just a dummy test suite without decorators:
     class T2(unittest.TestCase):
