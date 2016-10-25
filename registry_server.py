@@ -37,7 +37,7 @@ class RegHandler(asyncore.dispatcher_with_send):
         '''
         cmd = req.split()
         LOG.debug(cmd)
-        return getattr(self, cmd[0])(cmd[1:])
+        return getattr(self, cmd[0])(*cmd[1:])
 
     def itemgen(self, pattern):
         '''
