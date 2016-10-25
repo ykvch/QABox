@@ -25,13 +25,27 @@ class RegHandler(asyncore.dispatcher_with_send):
             if head == MAGIC_SEQUENCE: # shut down the server
                 for m in asyncore.socket_map.values():
                     m.close()
-            self.send_response(self.buffer+head)
+            self.dispatch_req(self.buffer+head)
             self.buffer = ''
             head, sep, tail = tail.partition('\n')
         # if something remains without \n, store it for the next handle_read
         self.buffer = head
 
-    def send_response(self, item):
+    def dispatch_req(self, req):
+        '''Parse request and call appropriate method to handle it
+        req: request string (command arg0 arg1 arg2)
+        '''
+        cmd = req.split()
+        LOG.debug(cmd)
+        return getattr(self, cmd[0])(cmd[1:])
+
+    def itemgen(self, pattern):
+        '''
+        Generate a sequence of items matching pattern in master.registry
+        '''
+        raise NotImplementedError()
+
+    def ask(self, item):
         taken_already = item in self.master.registry
         if not taken_already:
             self.master.registry.add(item)
