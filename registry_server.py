@@ -41,9 +41,12 @@ class RegHandler(asyncore.dispatcher_with_send):
         return getattr(self, cmd[0])(*cmd[1:])
 
     def take(self, item):
+        # We register node only if tries to "take" file
+        # Also ensures that previously deleted node would be re-registered
+        node = self.master.registry.setdefault('{0}:{1}'.format(*self.addr), set())
         taken_already = any(item in r for r in self.master.registry.values())
         if not taken_already:
-            self.master.registry['{0}:{1}'.format(*self.addr)].add(item)
+            node.add(item)
         self.send('{0} {1:d}\n'.format(item, taken_already))
         LOG.info('{0}: {1} {2}'.format(self.addr, item,
                 'already taken' if taken_already else 'OK'))
@@ -94,7 +97,6 @@ class RegServer(asyncore.dispatcher):
         if sock_addr is None: return
         sock, addr = sock_addr
         LOG.info('Incoming connection from {0}:{1}'.format(*addr))
-        self.registry.setdefault('{0}:{1}'.format(*addr), set())
         RegHandler(sock, self)
 
 if __name__ == '__main__':
