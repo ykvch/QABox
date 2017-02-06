@@ -35,9 +35,9 @@ Note3: there can be multiple decorated test methods in each test class.
 Note4: the generated tests CAN BE RUN SEPARATELY as if they really exist
     in the file (proper python methodnames are created from original test
     name and param values).
-Note5: method docstring gets processed via string.Template substitution.
-    So positional method params can be referred as arg0, arg1, arg2...
-    Refer named params by their respective names. Please see the example in __main__
+Note5: method docstring gets processed via "str.format"-like substitution.
+    So, with curly braces, positional method params can be referred as 0, 1, 2...
+    and named params by their respective names. Please see the example in __main__
 
 That's all. Our metaclass will spawn extra 9 methods each containing
 a `test_method` call, but with different param combinations (as shown below):
@@ -90,7 +90,6 @@ def mix_params(args, kwargs):
 def zip_params(args, kwargs):
     '''For every param inside args/kwargs takes n-th element and builds up an
     args/kwargs tuple. Just as zip() does with iterables'''
-    print '***', args, kwargs
     zipped_args = itertools.izip(*args)
     zipped_kwargs = (dict(zip(kwargs.keys(), v)) for v in itertools.izip(*kwargs.values()))
     # {} fits perfect for both * and ** extraction
