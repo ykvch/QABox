@@ -53,6 +53,7 @@ Any questions? Contact me on github. User: yan123
 import itertools
 from string import Formatter
 
+
 class ApatheticFormatter(Formatter):
     '''Formatter that tries to ignore errors and put
     unresolved placeholders back in place'''
@@ -60,23 +61,25 @@ class ApatheticFormatter(Formatter):
         try:
             return args[fname]
         except (TypeError, IndexError, KeyError):
-        # KeyError is needed because we might get args as dict (see zip_params)
+            # KeyError is needed because we might get args as dict (see zip_params)
             pass
         try:
             return kwargs[fname]
-        except KeyError: # unresolved, push placeholder back
+        except KeyError:  # unresolved, push placeholder back
             return '{{{}}}'.format(fname)
+
 
 FMT = ApatheticFormatter()
 
 # Word representation for certain literals.
 # Some symbols inspired by: https://dev.w3.org/html5/html-author/charref
 AS_WORD = {'.': '_', '-': 'minus', '+': 'plus', '#': 'num', '!': 'excl',
-        '"': 'quot', '$': 'dollar', '%': 'percnt', '&': 'amp', '/': 'sol',
-        '\\': 'bsol', '=': 'eq', ',': 'comma', ';': 'semi', ':': 'colon'}
+           '"': 'quot', '$': 'dollar', '%': 'percnt', '&': 'amp', '/': 'sol',
+           '\\': 'bsol', '=': 'eq', ',': 'comma', ';': 'semi', ':': 'colon'}
 
 # Make up a valid python name
 pystr = lambda n: ''.join(x if x.isalnum() else AS_WORD.get(x, '_') for x in str(n))
+
 
 def mix_params(args, kwargs):
     '''Takes args/kwargs tuple and returns all param combinations inside.
@@ -87,18 +90,21 @@ def mix_params(args, kwargs):
     for i in itertools.product(*itertools.chain(args, kwargs.values())):
         yield tuple(i[:args_len]), dict(zip(kwargs.keys(), i[args_len:]))
 
+
 def zip_params(args, kwargs):
     '''For every param inside args/kwargs takes n-th element and builds up an
     args/kwargs tuple. Just as zip() does with iterables'''
     zipped_args = itertools.izip(*args)
-    zipped_kwargs = (dict(zip(kwargs.keys(), v)) for v in itertools.izip(*kwargs.values()))
+    zipper_kw = (dict(zip(kwargs.keys(), v)) for v in itertools.izip(*kwargs.values()))
     # {} fits perfect for both * and ** extraction
-    for one_args_kwargs in itertools.izip_longest(zipped_args, zipped_kwargs, fillvalue={}):
-        yield one_args_kwargs
+    for one_ar_kw in itertools.izip_longest(zipped_args, zipper_kw, fillvalue={}):
+        yield one_ar_kw
+
 
 def kwargs_params(list_of_kwargs, _):
     for k in list_of_kwargs:
         yield (), k
+
 
 def attach_params(mix_method, args, kwargs):
     '''Decorator. Adds _metatest_params=(args, kwargs) field to decorated method.
@@ -109,9 +115,11 @@ def attach_params(mix_method, args, kwargs):
         return method
     return wrapper
 
+
 with_combined = lambda *args, **kwargs: attach_params(mix_params, args, kwargs)
 with_zipped = lambda *args, **kwargs: attach_params(zip_params, args, kwargs)
 with_kwargs = lambda *list_of_kwargs: attach_params(kwargs_params, list_of_kwargs, None)
+
 
 def explain(*args, **kwargs):
     '''
@@ -135,9 +143,9 @@ class MultiTestMeta(type):
     def __new__(mcs, cls_name, bases, attrs):
         # We'll change attrs while iterating, prepare a list (py3):
         marked_tests = [(k, v) for k, v in attrs.items() if
-               callable(v) and hasattr(v, '_metatest_params')]
+                        callable(v) and hasattr(v, '_metatest_params')]
         for name, method in marked_tests:
-            del attrs[name] # remove original test method not to mess with test-runner
+            del attrs[name]  # remove original test method not to mess with test-runner
             for test_args, test_kwargs in method._metatest_params:
 
                 if hasattr(method, '_multitest_explain'):
@@ -156,13 +164,13 @@ class MultiTestMeta(type):
                 # Provide another substitution for `explain` decorator:
                 if hasattr(method, '_multitest_explain'):
                     actual_test.__doc__ = FMT.vformat(actual_test.__doc__, (),
-                            method._multitest_explain)
+                                                      method._multitest_explain)
 
                 actual_name = (name +
-                        ('_' if test_args or test_kwargs else '') +
-                        '_'.join(pystr(a) for a in test_args) +
-                        ('_' if test_args and test_kwargs else '') +
-                        '_'.join(pystr(k)+'_'+pystr(v) for k,v in sorted(test_kwargs.items())))
+                               ('_' if test_args or test_kwargs else '') +
+                               '_'.join(pystr(a) for a in test_args) +
+                               ('_' if test_args and test_kwargs else '') +
+                               '_'.join(pystr(k)+'_'+pystr(v) for k,v in sorted(test_kwargs.items())))
 
                 # Make sure actual_name is unique:
                 if actual_name in attrs:
@@ -173,7 +181,7 @@ class MultiTestMeta(type):
                             break
                     else:
                         raise RuntimeError('1024 methods with similar name '
-                                'already exist, please consider refactoring')
+                                           'already exist, please consider refactoring')
                 # Using __name__, __dict__ instead of func_* for py3 compatibility.
                 actual_test.__name__ = actual_name
                 actual_test.__dict__ = method.__dict__
@@ -181,10 +189,12 @@ class MultiTestMeta(type):
 
         return super(MultiTestMeta, mcs).__new__(mcs, cls_name, bases, attrs)
 
+
 class MultiTestMixin(object):
     '''Enables spawning multiple tests methods via with_combined
     decorator and inheritance'''
     __metaclass__ = MultiTestMeta
+
 
 # Usage example (just run 'python multitest.py'):
 if __name__ == '__main__':
@@ -206,8 +216,9 @@ if __name__ == '__main__':
         @with_combined((1, 2, 3.456), col=['a', 'b', 'c'], extra='+-')
         def test_steps2execute(self, row, col, extra):
             '''Test steps with *args[0]={0} col={col} extra={extra} params.'''
-            print 'doing some steps with: row='+str(row)+', col='+col+', extra='+extra
-            self.assertEquals(row*col+extra, 'cc+')
+            print('doing some steps with: row=' + str(row) + ', col=' + col + ', '
+                  'extra=' + extra)
+            self.assertEquals(row * col + extra, 'cc+')
 
         def test_not_decorated(self):
             print 'not decorated test'
@@ -221,7 +232,7 @@ if __name__ == '__main__':
             print prefix, linetype
             self.assertEquals(prefix, linetype)
 
-        @with_zipped(a=dict(q=1, w=2, e=3), b=(2,3,4,5))
+        @with_zipped(a=dict(q=1, w=2, e=3), b=(2, 3, 4, 5))
         def test_z(self, a, b):
             '''Test {a} {b}'''
             assert a == b
