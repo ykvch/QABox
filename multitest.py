@@ -57,6 +57,7 @@ from string import Formatter
 class ApatheticFormatter(Formatter):
     '''Formatter that tries to ignore errors and put
     unresolved placeholders back in place'''
+
     def get_value(self, fname, args, kwargs):
         try:
             return args[fname]
@@ -79,6 +80,14 @@ AS_WORD = {'.': '_', '-': 'minus', '+': 'plus', '#': 'num', '!': 'excl',
 
 # Make up a valid python name
 pystr = lambda n: ''.join(x if x.isalnum() else AS_WORD.get(x, '_') for x in str(n))
+
+
+def pyname(name, *args, **kwargs):
+    '''Pythonify name and add underscore divided args/kwargs values'''
+    return (name + ('_' if args or kwargs else '') +
+            '_'.join(pystr(a) for a in args) +
+            ('_' if args and kwargs else '') +
+            '_'.join(pystr(k) + '_' + pystr(v) for k, v in sorted(kwargs.items())))
 
 
 def mix_params(args, kwargs):
@@ -121,20 +130,23 @@ with_zipped = lambda *args, **kwargs: attach_params(zip_params, args, kwargs)
 with_kwargs = lambda *list_of_kwargs: attach_params(kwargs_params, list_of_kwargs, None)
 
 
-def explain(*args, **kwargs):
+def define(*args, **kwargs):
     '''
     Decorator
     test_method args/kwargs will be used as keys for `meaning_dict`
     Inside test methods args/kwargs will be converted (at least try) to their
     appropriate values from the `meaning_dict`
     Also EXTRA vformat substitution is done with meaning_dict (if given),
-    so arg values can be `explained` by using {{{}}} notation
+    so arg values can be `defined` by using {{{}}} notation
     '''
     def wrapper(method):
         meaning_dict = dict(*args, **kwargs)
-        method._multitest_explain = meaning_dict
+        method._multitest_define = meaning_dict
         return method
     return wrapper
+
+
+explain = define  # backward compatibility
 
 
 class MultiTestMeta(type):
@@ -148,9 +160,11 @@ class MultiTestMeta(type):
             del attrs[name]  # remove original test method not to mess with test-runner
             for test_args, test_kwargs in method._metatest_params:
 
-                if hasattr(method, '_multitest_explain'):
-                    inside_args = tuple(method._multitest_explain.get(a, a) for a in test_args)
-                    inside_kwargs = {k: method._multitest_explain.get(v, v) for k, v in test_kwargs.iteritems()}
+                if hasattr(method, '_multitest_define'):
+                    inside_args = tuple(method._multitest_define.get(a, a)
+                                        for a in test_args)
+                    inside_kwargs = {k: method._multitest_define.get(v, v)
+                                     for k, v in test_kwargs.iteritems()}
                 else:
                     inside_args = test_args
                     inside_kwargs = test_kwargs
@@ -160,17 +174,14 @@ class MultiTestMeta(type):
                     return me(self, *ar, **kw)
 
                 # Substitute template values in docstring:
-                actual_test.__doc__ = FMT.vformat(method.__doc__ or '', test_args, test_kwargs)
-                # Provide another substitution for `explain` decorator:
-                if hasattr(method, '_multitest_explain'):
+                actual_test.__doc__ = FMT.vformat(
+                    method.__doc__ or '', test_args, test_kwargs)
+                # Provide another substitution for `define` decorator:
+                if hasattr(method, '_multitest_define'):
                     actual_test.__doc__ = FMT.vformat(actual_test.__doc__, (),
-                                                      method._multitest_explain)
+                                                      method._multitest_define)
 
-                actual_name = (name +
-                               ('_' if test_args or test_kwargs else '') +
-                               '_'.join(pystr(a) for a in test_args) +
-                               ('_' if test_args and test_kwargs else '') +
-                               '_'.join(pystr(k)+'_'+pystr(v) for k,v in sorted(test_kwargs.items())))
+                actual_name = pyname(name, *test_args, **test_kwargs)
 
                 # Make sure actual_name is unique:
                 if actual_name in attrs:
@@ -226,7 +237,7 @@ if __name__ == '__main__':
 
         # Note the {WAT?} in docstring, we try to leave missing values untouched
         @with_combined(linetype=['short', 'long'], prefix=['digits', 'dots'])
-        @explain(short='a', long='aaaaa', digits='12345', dots='.:')
+        @define(short='a', long='aaaaa', digits='12345', dots='.:')
         def test_with_resource_dict(self, linetype, prefix):
             '''Test{WAT?} {linetype} line {{{linetype}}} with {prefix} {{{prefix}}}'''
             print prefix, linetype
