@@ -133,15 +133,15 @@ with_kwargs = lambda *list_of_kwargs: attach_params(kwargs_params, list_of_kwarg
 def define(*args, **kwargs):
     '''
     Decorator
-    test_method args/kwargs will be used as keys for `meaning_dict`
+    test_method args/kwargs will be used as keys for `definition_dict`
     Inside test methods args/kwargs will be converted (at least try) to their
-    appropriate values from the `meaning_dict`
-    Also EXTRA vformat substitution is done with meaning_dict (if given),
-    so arg values can be `defined` by using {{{}}} notation
+    appropriate values from the `definition_dict`
+    Also vformat substitution is done with definition_dict (if given),
+    so arg/kwarg values can be referred by using {#digit_or_kwarg} notation
     '''
     def wrapper(method):
-        meaning_dict = dict(*args, **kwargs)
-        method._multitest_define = meaning_dict
+        definition_dict = dict(*args, **kwargs)
+        method._multitest_define = definition_dict
         return method
     return wrapper
 
@@ -160,29 +160,8 @@ class MultiTestMeta(type):
             del attrs[name]  # remove original test method not to mess with test-runner
             for test_args, test_kwargs in method._metatest_params:
 
-                if hasattr(method, '_multitest_define'):
-                    inside_args = tuple(method._multitest_define.get(a, a)
-                                        for a in test_args)
-                    inside_kwargs = {k: method._multitest_define.get(v, v)
-                                     for k, v in test_kwargs.iteritems()}
-                else:
-                    inside_args = test_args
-                    inside_kwargs = test_kwargs
-
-                # Closure here, using default args trick:
-                def actual_test(self, me=method, ar=inside_args, kw=inside_kwargs):
-                    return me(self, *ar, **kw)
-
-                # Substitute template values in docstring:
-                actual_test.__doc__ = FMT.vformat(
-                    method.__doc__ or '', test_args, test_kwargs)
-                # Provide another substitution for `define` decorator:
-                if hasattr(method, '_multitest_define'):
-                    actual_test.__doc__ = FMT.vformat(actual_test.__doc__, (),
-                                                      method._multitest_define)
-
+                # Creating new pythonic method name
                 actual_name = pyname(name, *test_args, **test_kwargs)
-
                 # Make sure actual_name is unique:
                 if actual_name in attrs:
                     prefix_name = actual_name
@@ -193,6 +172,38 @@ class MultiTestMeta(type):
                     else:
                         raise RuntimeError('1024 methods with similar name '
                                            'already exist, please consider refactoring')
+
+                # Prepare params for _multitest_define
+                inside_args = test_args
+                inside_kwargs = test_kwargs.copy()
+                doc_kwargs = test_kwargs.copy()
+
+                if hasattr(method, '_multitest_define'):
+                    # Avoiding dict.get, due to possiblity of non-hashable param values
+                    inside_args = tuple(method._multitest_define[a]
+                                        if a in method._multitest_define else a
+                                        for a in test_args)
+
+                    inside_kwargs.update({k: method._multitest_define[v] for k, v in
+                                          test_kwargs.iteritems()
+                                          if v in method._multitest_define})
+
+                    # Handle #0, #1, #2... for args in docstrings
+                    doc_kwargs.update({'#' + str(n): method._multitest_define[v] if
+                                       v in method._multitest_define else v
+                                       for n, v in enumerate(test_args)})
+                    # Handle #value for redefined kwargs in docstrings
+                    doc_kwargs.update({'#' + str(k): v
+                                       for k, v in inside_kwargs.iteritems()})
+
+                # Closure here, using default args trick:
+                def actual_test(self, me=method, ar=inside_args, kw=inside_kwargs):
+                    return me(self, *ar, **kw)
+
+                # Substitute template values in docstring:
+                actual_test.__doc__ = FMT.vformat(method.__doc__ or '',
+                                                  test_args, doc_kwargs)
+
                 # Using __name__, __dict__ instead of func_* for py3 compatibility.
                 actual_test.__name__ = actual_name
                 actual_test.__dict__ = method.__dict__
@@ -236,10 +247,10 @@ if __name__ == '__main__':
             self.assertTrue(True)
 
         # Note the {WAT?} in docstring, we try to leave missing values untouched
-        @with_combined(linetype=['short', 'long'], prefix=['digits', 'dots'])
-        @define(short='a', long='aaaaa', digits='12345', dots='.:')
+        @with_combined(['short', 'long', '{'], prefix=['digits', 'dots', 'lbrace'])
+        @define(short='a', long='aaaaa', digits='12345', dots='.:', lbrace='{')
         def test_with_resource_dict(self, linetype, prefix):
-            '''Test{WAT?} {linetype} line {{{linetype}}} with {prefix} {{{prefix}}}'''
+            '''Test{WAT?} {0} line {#0} with {prefix} {#prefix}'''
             print prefix, linetype
             self.assertEquals(prefix, linetype)
 
