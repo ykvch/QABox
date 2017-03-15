@@ -136,8 +136,9 @@ def define(*args, **kwargs):
     test_method args/kwargs will be used as keys for `definition_dict`
     Inside test methods args/kwargs will be converted (at least try) to their
     appropriate values from the `definition_dict`
-    Also vformat substitution is done with definition_dict (if given),
-    so arg/kwarg values can be referred by using {#digit_or_kwarg} notation
+
+    arg/kwarg redefined values can be referred by {#argnum_or_kwargname} notation
+    while original ones (from @with_...) are referred as usual {argnum_or_kwargname}
     '''
     def wrapper(method):
         definition_dict = dict(*args, **kwargs)
