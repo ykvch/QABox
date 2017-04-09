@@ -8,9 +8,11 @@ import logging
 import fnmatch
 
 LOG = logging.getLogger('registry_server')
-logging.basicConfig(format='%(asctime)s:%(levelname)s:%(name)s: %(message)s', level='DEBUG')
+logging.basicConfig(
+    format='%(asctime)s:%(levelname)s:%(name)s: %(message)s', level='DEBUG')
 
 MAGIC_SEQUENCE = 'thank you'
+
 
 class RegHandler(asyncore.dispatcher_with_send):
 
@@ -22,11 +24,11 @@ class RegHandler(asyncore.dispatcher_with_send):
     def handle_read(self):
         head, sep, tail = self.recv(1024).partition('\n')
 
-        while sep: # handle case of multiple lines in one recv
-            if head == MAGIC_SEQUENCE: # shut down the server
+        while sep:  # handle case of multiple lines in one recv
+            if head == MAGIC_SEQUENCE:  # shut down the server
                 for m in asyncore.socket_map.values():
                     m.close()
-            self.dispatch_req(self.buffer+head)
+            self.dispatch_req(self.buffer + head)
             self.buffer = ''
             head, sep, tail = tail.partition('\n')
         # if something remains without \n, store it for the next handle_read
@@ -49,7 +51,7 @@ class RegHandler(asyncore.dispatcher_with_send):
             node.add(item)
         self.send('{0} {1:d}\n'.format(item, taken_already))
         LOG.info('{0}: {1} {2}'.format(self.addr, item,
-                'already taken' if taken_already else 'OK'))
+                                       'already taken' if taken_already else 'OK'))
 
     def ls(self, pattern='*', node='*'):
         for k, v in self.master.registry.items():
@@ -94,7 +96,8 @@ class RegServer(asyncore.dispatcher):
 
     def handle_accept(self):
         sock_addr = self.accept()
-        if sock_addr is None: return
+        if sock_addr is None:
+            return
         sock, addr = sock_addr
         LOG.info('Incoming connection from {0}:{1}'.format(*addr))
         RegHandler(sock, self)

@@ -9,13 +9,15 @@ from nose.plugins import Plugin
 
 log = logging.getLogger('nose.plugins.registry')
 
+
 class RegistryClient(Plugin):
     name = 'registry'
     reg_addr, sock = None, None
 
     def configure(self, options, conf):
         super(RegistryClient, self).configure(options, conf)
-        if not self.enabled: return
+        if not self.enabled:
+            return
         self.sock = None
         host, port = options.registry_server.rsplit(':', 1)
         self.reg_addr = host, int(port)
@@ -31,25 +33,26 @@ class RegistryClient(Plugin):
         try:
             self.sock.connect(self.reg_addr)
         except socket.error:
-            raise RuntimeError('Failed to connect to registry server at {0}'.format(self.reg_addr))
+            raise RuntimeError(
+                'Failed to connect to registry server at {0}'.format(self.reg_addr))
 
     def options(self, parser, env):
         super(RegistryClient, self).options(parser, env)
         parser.add_option('--registry-server',
-                default=env.get('REGISTRY_SERVER', 'localhost:8888'),
-                dest='registry_server',
-                metavar='host:port',
-                help='Running registry server network address')
+                          default=env.get('REGISTRY_SERVER', 'localhost:8888'),
+                          dest='registry_server',
+                          metavar='host:port',
+                          help='Running registry server network address')
         parser.add_option('--registry-fnmatch',
-                default=env.get('REGISTRY_FNMATCH', 'test*.py'),
-                dest='registry_fnmatch',
-                metavar='pattern',
-                help='Pattern to match for test-containing files')
+                          default=env.get('REGISTRY_FNMATCH', 'test*.py'),
+                          dest='registry_fnmatch',
+                          metavar='pattern',
+                          help='Pattern to match for test-containing files')
         parser.add_option('--registry-fnignore',
-                default=env.get('REGISTRY_FNIGNORE', ''),
-                dest='registry_fnignore',
-                metavar='pattern',
-                help='Pattern to ignore for test-containing files')
+                          default=env.get('REGISTRY_FNIGNORE', ''),
+                          dest='registry_fnignore',
+                          metavar='pattern',
+                          help='Pattern to ignore for test-containing files')
 
     def finalize(self, result):
         self.sock.close()
@@ -59,11 +62,11 @@ class RegistryClient(Plugin):
         if not fnmatch(bname, self.pattern) or fnmatch(bname, self.ignore):
             return False
 
-        self.sock.send('take '+bname+'\n')
+        self.sock.send('take ' + bname + '\n')
         data = resp = self.sock.recv(1024)
         while '\n' not in resp:
             resp = self.sock.recv(1024)
-            if not resp: # reconnect
+            if not resp:  # reconnect
                 self.connect_to_server()
             data += resp
 
@@ -71,6 +74,6 @@ class RegistryClient(Plugin):
         recv_name, in_registry = head[:-2], head[-1]
         assert recv_name == bname, 'Got incorrect filename from registry server'
 
-        if int(in_registry): # already registrered by someone else
-            return False # so we don't want that file
+        if int(in_registry):  # already registrered by someone else
+            return False  # so we don't want that file
         # else: return None # meaning: let the selector decide
