@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Comparator object combines both the value(s) to compare with AND the information on
-HOW to provide that comparison.
+Comparator object combines both the value(s) to compare with
+AND the information on HOW to provide that comparison.
 
 It allows to bind compare logic into arguments.
 
@@ -50,7 +50,7 @@ def comparator(method):
         It calls given function for every comparison of other values to it.
     """
     def wrap(*condition):
-        eq = lambda self_, val: method(val, *condition)
+        eq = lambda self, val: method(val, *condition)
         return type('Cmp', (), {'__eq__': eq})()
     wrap.__doc__ = method.__doc__
     return wrap
