@@ -51,8 +51,11 @@ def comparator(method):
         It calls given function for every comparison of other values to it.
     """
     def wrap(*condition):
-        eq = lambda self, val: method(val, *condition)
-        return type('Cmp', (), {'__eq__': eq})()
+        eq = lambda self_, val: method(val, *condition)
+        repr_ = lambda self_: 'Cmp({0}({1}))'.format(method.__name__,
+                                                     ', '.join(str(i) for i in condition))
+        print method.__name__
+        return type('Cmp', (), {'__eq__': eq, '__repr__': repr_})()
     wrap.__doc__ = method.__doc__
     return wrap
 
