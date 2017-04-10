@@ -32,7 +32,8 @@ Instead we may leave this method as is and use comparators:
 >>> validator(response, status=lt(206), body_len=in_range(300, 400))
 
 Now when validator tries to `==` status, it will check if its less-than 206 instead.
-And when running `==` with body_len, it will check if it falls into range [300..400]
+And when running `==` with body_len, it will check if it falls into range [300..400].
+Profit!
 """
 
 
