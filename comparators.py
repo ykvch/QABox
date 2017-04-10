@@ -54,7 +54,6 @@ def comparator(method):
         eq = lambda self_, val: method(val, *condition)
         repr_ = lambda self_: 'Cmp({0}({1}))'.format(method.__name__,
                                                      ', '.join(str(i) for i in condition))
-        print method.__name__
         return type('Cmp', (), {'__eq__': eq, '__repr__': repr_})()
     wrap.__doc__ = method.__doc__
     return wrap
