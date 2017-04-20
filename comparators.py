@@ -103,10 +103,10 @@ def any_matches(val, *condition):
 
 
 @comparator
-def search_regex(val, pattern):
+def regex_search(val, pattern):
     return re.search(pattern, val) is not None
 
 
 @comparator
-def match_regex(val, pattern):
+def regex_match(val, pattern):
     return re.match(pattern, val) is not None
