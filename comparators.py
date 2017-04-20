@@ -54,7 +54,7 @@ def comparator(method):
     def wrap(*condition):
         eq = lambda self_, val: method(val, *condition)
         repr_ = lambda self_: '{0}({1})'.format(method.__name__,
-                                                ', '.join(str(i) for i in condition))
+                                                ', '.join(repr(i) for i in condition))
         return type('Cmp', (), {'__eq__': eq, '__repr__': repr_})()
     wrap.__doc__ = method.__doc__
     return wrap
@@ -85,6 +85,16 @@ def lt(val, condition):
 @comparator
 def gt(val, condition):
     return val > condition
+
+
+@comparator
+def le(val, condition):
+    return val <= condition
+
+
+@comparator
+def ge(val, condition):
+    return val >= condition
 
 
 @comparator  # TODO: invent better names for these
