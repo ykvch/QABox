@@ -35,6 +35,7 @@ Now when validator tries to `==` status, it will check if its less-than 206 inst
 And when running `==` with body_len, it will check if it falls into range [300..400].
 Profit!
 """
+import re
 
 
 def comparator(method):
@@ -52,8 +53,8 @@ def comparator(method):
     """
     def wrap(*condition):
         eq = lambda self_, val: method(val, *condition)
-        repr_ = lambda self_: 'Cmp({0}({1}))'.format(method.__name__,
-                                                     ', '.join(str(i) for i in condition))
+        repr_ = lambda self_: '{0}({1})'.format(method.__name__,
+                                                ', '.join(str(i) for i in condition))
         return type('Cmp', (), {'__eq__': eq, '__repr__': repr_})()
     wrap.__doc__ = method.__doc__
     return wrap
@@ -99,3 +100,13 @@ def all_match(val, *condition):
 @comparator
 def any_matches(val, *condition):
     return all(val == i for i in condition)
+
+
+@comparator
+def search_regex(val, pattern):
+    return re.search(pattern, val) is not None
+
+
+@comparator
+def match_regex(val, pattern):
+    return re.match(pattern, val) is not None
