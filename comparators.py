@@ -108,8 +108,8 @@ def all_match(val, *condition):
 
 
 @comparator
-def any_matches(val, *condition):
-    return all(val == i for i in condition)
+def any_match(val, *condition):
+    return any(val == i for i in condition)
 
 
 @comparator
