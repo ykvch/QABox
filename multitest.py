@@ -159,7 +159,7 @@ class MultiTestMeta(type):
                         callable(v) and hasattr(v, '_metatest_params')]
         for name, method in marked_tests:
             del attrs[name]  # remove original test method not to mess with test-runner
-            for test_args, test_kwargs in method._metatest_params:
+            for test_args, test_kwargs in method.__dict__.pop('_metatest_params'):
 
                 # Creating new pythonic method name
                 actual_name = pyname(name, *test_args, **test_kwargs)
