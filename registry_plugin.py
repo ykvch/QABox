@@ -43,22 +43,27 @@ class RegistryClient(Plugin):
                           dest='registry_server',
                           metavar='host:port',
                           help='Running registry server network address')
-        parser.add_option('--registry-fnmatch',
-                          default=env.get('REGISTRY_FNMATCH', 'test*.py'),
+        parser.add_option('--registry-match',
+                          default=env.get('REGISTRY_FNMATCH', 'test*'),
                           dest='registry_fnmatch',
                           metavar='pattern',
-                          help='Pattern to match for test-containing files')
-        parser.add_option('--registry-fnignore',
+                          help='Pattern to match for test-containing modules')
+        parser.add_option('--registry-ignore',
                           default=env.get('REGISTRY_FNIGNORE', ''),
                           dest='registry_fnignore',
                           metavar='pattern',
-                          help='Pattern to ignore for test-containing files')
+                          help='Pattern to ignore for test-containing modules')
 
     def finalize(self, result):
         self.sock.close()
 
-    def wantFile(self, fname):
-        bname = os.path.basename(fname)
+    def wantModule(self, mod):
+        # https://docs.python.org/3/reference/import.html#packages
+        print mod
+        if hasattr(mod, '__path__'):
+            return None
+        bname = mod.__name__
+        # bname = os.path.basename(mod)
         if not fnmatch(bname, self.pattern) or fnmatch(bname, self.ignore):
             return False
 
@@ -72,8 +77,8 @@ class RegistryClient(Plugin):
 
         head, _, _ = data.partition('\n')
         recv_name, in_registry = head[:-2], head[-1]
-        assert recv_name == bname, 'Got incorrect filename from registry server'
+        assert recv_name == bname, 'Got incorrect module name from registry server'
 
         if int(in_registry):  # already registrered by someone else
-            return False  # so we don't want that file
+            return False  # so we don't want that module
         # else: return None # meaning: let the selector decide
