@@ -59,7 +59,6 @@ class RegistryClient(Plugin):
 
     def wantModule(self, mod):
         # https://docs.python.org/3/reference/import.html#packages
-        print mod
         if hasattr(mod, '__path__'):
             return None
         bname = mod.__name__
