@@ -8,7 +8,8 @@ def parse_docstring(docstring):
         docstring (str): test docstring
 
     Returns:
-        dict where keys are pre (for preconditions), step (for steps to execute),
+        dict where keys are title (for test title, the 1st line of docstring),
+        pre (for preconditions), step (for steps to execute),
         expect (for expected results) and values are dedented texts
         from corresponding docstring sections
     """
