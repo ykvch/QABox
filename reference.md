@@ -14,7 +14,8 @@ New-line inside paragraph is marked by 2 spaces at the end of line.
 > multiline (extra line after blockqoute has to be added)
  
 [link-description](http://github.com)  
-Image ![image-alt-text](https://github.com/favicon.ico) url can be relative path to repo  
+Simple image ![image-alt-text](https://github.com/favicon.ico) url can be relative path to repo  
+Image as link: [![alt](https://github.com/favicon.ico)](https://github.com/yan123/QABox)  
 http://github.com -- autodetected link  
 
 ```bash
@@ -35,3 +36,8 @@ table head has | to be separated | by minus row
 -|:-:|-:
 vertical | bars | separate
 columns | mid align | right align
+
+Horizontal lines:
+***
+---
+___
