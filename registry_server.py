@@ -32,7 +32,7 @@ class RegHandler(asyncore.dispatcher_with_send):
             self.buffer = ''
             head, sep, tail = tail.partition('\n')
         # if something remains without \n, store it for the next handle_read
-        self.buffer = head
+        self.buffer += head
 
     def dispatch_req(self, req):
         '''Parse request and call appropriate method to handle it

@@ -66,7 +66,7 @@ class RegistryClient(Plugin):
         if not fnmatch(bname, self.pattern) or fnmatch(bname, self.ignore):
             return False
 
-        self.sock.send('take ' + bname + '\n')
+        self.sock.sendall('take ' + bname + '\n')
         data = resp = self.sock.recv(1024)
         while '\n' not in resp:
             resp = self.sock.recv(1024)
