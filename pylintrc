@@ -1,0 +1,20 @@
+[MASTER]
+# enable pylint in virtualenvs
+init-hook='import sys; p="/home/user/work/"; [sys.path.append(p+d) for d in ('', "proj0", "proj1", "etc")]'
+# init-hook='import sys; sys.path.append("/home/user/work/venv/lib/python2.7/site-packages")'
+ignore=.git
+
+[MESSAGES CONTROL]
+disable=W0403,W0212,E309,E731,C0111
+
+# [REPORTS]
+# reports=yes
+
+[BASIC]
+function-rgx=[a-z_][a-zA-Z0-9_]{2,60}$
+method-rgx=[a-z_][a-zA-Z0-9_]{2,60}$
+
+[FORMAT]
+# regex for lines that are allowed to be long
+ignore-long-lines=^\s*(# |long_cfg_prefix|word_with_space |etc |""")
+max-line-length=90
