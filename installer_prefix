@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# create target
+mkdir $1
+ABS_PATH=`realpath $1`
+
+# extract from tgz
+sed -e '1,/^___TGZ_START___$/d' "$0" | tar -C $ABS_PATH -zxvf -
+
+# fix absolute paths inside venv
+cd $ABS_PATH
+sed -i.bkup s:##target_path##:$ABS_PATH:g venv/bin/*
+sed -i.bkup s:##target_path##:$ABS_PATH:g venv/lib/python2.7/site-packages/*.pth
+sed -i.bkup s:##target_path##:$ABS_PATH:g venv/lib/python2.7/site-packages/*.egg-link
+find $ABS_PATH -name '*.bkup' -delete
+
+exit 0
+
+___TGZ_START___
