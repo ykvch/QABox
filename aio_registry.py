@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import asyncio
+import argparse
 
 
 COMMANDS = {}
@@ -12,6 +13,12 @@ def command(*args):
             COMMANDS[i] = f
         return f
     return wrap
+
+
+@command("thank")
+def done(*args):
+    server.time2stop = True
+    return ""
 
 
 @command("echo")
@@ -36,7 +43,7 @@ def dispatch(cmd, args):
 async def handle_command(reader, writer):
     buff = ""
 
-    data = await reader.read(7)
+    data = await reader.read(1024)
     message = data.decode()
 
     while message:
@@ -46,28 +53,37 @@ async def handle_command(reader, writer):
         while sep:
             cmd, *params = buff.split(" ")
             writer.write(dispatch(cmd, params))
+            if server.time2stop:
+                writer.close()
+                server.close()
             buff, sep, tail = tail.partition("\n")
 
-        data = await reader.read(7)
+        data = await reader.read(1024)
         message = data.decode()
-        continue
 
     print("Close the client socket")
     writer.close()
 
-loop = asyncio.get_event_loop()
 
+# Parse command line arguments
+parser = argparse.ArgumentParser(description="Server part of test registry plugin",
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("-a", "--address", default="127.0.0.1", help="Listen address")
+parser.add_argument("-p", "--port", type=int, default=8888, help="Listen port")
+args = parser.parse_args()
+
+loop = asyncio.get_event_loop()
 server = loop.run_until_complete(
-    asyncio.start_server(handle_command, '127.0.0.1', 8888, loop=loop))
+    asyncio.start_server(handle_command, args.address, args.port, loop=loop))
+server.time2stop = False  # stop flag
 
 # Serve requests until Ctrl+C is pressed
 print('Serving on {}'.format(server.sockets[0].getsockname()))
 try:
-    loop.run_forever()
+    loop.run_until_complete(server.wait_closed())
 except KeyboardInterrupt:
-    pass
+    # Close the server
+    server.close()
+    loop.run_until_complete(server.wait_closed())
 
-# Close the server
-server.close()
-loop.run_until_complete(server.wait_closed())
 loop.close()
