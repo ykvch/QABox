@@ -8,6 +8,7 @@ COMMANDS = {}
 
 
 def command(*args):
+    """Decorator to set functions as commands for server"""
     def wrap(f):
         for i in args:
             COMMANDS[i] = f
@@ -15,16 +16,23 @@ def command(*args):
     return wrap
 
 
+@command("nodes")
+async def nodes():
+    for k, v in server._nodes.items():
+        yield("{} {}".format(k, len(v)))
+
+
 @command("thank")
-def done(*args):
+async def done(*args):
+    """Stop the server"""
     server.time2stop = True
-    return ""
+    yield ""
 
 
 @command("echo")
-def echo(*args):
+async def echo(*args):
     """Simple echo command to print back params"""
-    return " ".join(args)
+    yield " ".join(args)
 
 
 @command("h", "help")
@@ -35,9 +43,9 @@ def help(*args):
     return "Available commands: " + " ".join(COMMANDS.keys())
 
 
-def dispatch(cmd, args):
-    retval = str(COMMANDS.get(cmd, help)(*args)) + "\n"
-    return bytes(retval.encode())
+async def _dispatch(cmd, args):
+    async for i in COMMANDS.get(cmd, help)(*args):
+        yield bytes((str(i) + "\n").encode())
 
 
 async def handle_command(reader, writer):
@@ -52,7 +60,8 @@ async def handle_command(reader, writer):
 
         while sep:
             cmd, *params = buff.split(" ")
-            writer.write(dispatch(cmd, params))
+            async for i in _dispatch(cmd, params):
+                writer.write(i)
             if server.time2stop:
                 writer.close()
                 server.close()
@@ -76,6 +85,7 @@ loop = asyncio.get_event_loop()
 server = loop.run_until_complete(
     asyncio.start_server(handle_command, args.address, args.port, loop=loop))
 server.time2stop = False  # stop flag
+server._nodes = {"a": "qwer"}  # {node: [taken_files_list],...}
 
 # Serve requests until Ctrl+C is pressed
 print('Serving on {}'.format(server.sockets[0].getsockname()))
