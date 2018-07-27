@@ -40,13 +40,13 @@ class SoftAssert():
         try:
             return func(*args, **kwargs)
         except self.track_exceptions as exc:
-            logging.exception("Error happened, collecting")
+            logging.exception("Exception happened, collecting")
             self.errors.append(exc)
 
     def __enter__(self):
         return self
 
-    def __exit__(self):
+    def __exit__(self, *args):
         return self.raise_errors()
 
     def raise_errors(self, msg=None):
