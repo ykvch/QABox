@@ -15,8 +15,8 @@ class SoftAssert():
         callable (see __call__ for details). Also can be used as context.
 
     Attributes:
-        message (str): aggregate report message prefix
-        final_exception: exception to raise on final report (self.raise_errors)
+        message (str): final report message prefix.
+        final_exception: exception to raise on final report (raise_errors).
     """
     message = "Errors collected"
     final_exception = AssertionError
@@ -29,11 +29,11 @@ class SoftAssert():
         """Wrapper to run func inside a try block and collect exceptions
 
         Args:
-            func (callable): callable to run
-            *args, **kwargs: directly passed to func
+            func (callable): callable to run.
+            *args, **kwargs: directly passed to func.
 
         Returns:
-            Same as func does
+            Same as func does.
         """
         assert callable(func), "The first argument should be a callable"
 
@@ -53,10 +53,10 @@ class SoftAssert():
         """Raise exception if any errors were previously collected
 
         Args:
-            msg (str): some alternative message to prefix error list output
+            msg (str): some alternative message to prefix error list output.
 
         Raises:
-            AssertionError by default, can be redefined in self.final_exception
+            AssertionError by default, can be changed in self.final_exception.
         """
         if self.errors:
             raise self.final_exception(
