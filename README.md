@@ -1,5 +1,6 @@
 QABox
 ======
+[softassert.py](softassert.py) -- basis soft asserts implementation for Python.
 
 [prettyrpc.py](prettyrpc.py) -- a better RPC :) A pair of classes that allow positional parameters in XMLRPC method calls. They also allow passing python objects as parameters to XMLRPC calls. They also help to avoid unintentional parameters modifications by XMLRPC (like removing newlines etc.).
 
