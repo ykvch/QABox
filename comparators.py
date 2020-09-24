@@ -28,8 +28,8 @@ Check if body_len is between 300 and 400 bytes (incl) and status code is < 206.
 We may extend validator and eventually overwhelm it with extra logic (or even magic).
 
 Instead we may leave this method as is and use comparators:
->>> from comparators import lt, between  # less-than, fits-range
->>> validator(response, status=lt(206), body_len=between(300, 400))
+>>> from comparators import lt, within  # less-than, fits-range
+>>> validator(response, status=lt(206), body_len=within(300, 400))
 
 Now when validator tries to `==` status, it will check if its less-than 206 instead.
 And when running `==` with body_len, it will check if it falls into range [300..400].
@@ -47,7 +47,7 @@ def validator(response, **kwargs):
             raise AssertionError(k, v)
 
 And usage becomes even simpler:
->>> validator(response, status_lt=206, body_len_between=[300, 400])
+>>> validator(response, status_lt=206, body_len_within=[300, 400])
 
 After final refactoring validator becomes:
 
@@ -88,7 +88,7 @@ def comparator(method):
 # Sample comparators
 
 @comparator
-def between(val, a, b):
+def within(val, a, b):
     return a <= val <= b
 
 
@@ -145,6 +145,24 @@ def re_search(val, pattern):
 @comparator
 def re_match(val, pattern):
     return re.match(pattern, val) is not None
+
+@comparator
+def endswith(val, condition):
+    return val.endswith(condition)
+
+
+@comparator
+def eq(val, condition):  # pylint: disable=invalid-name
+    return val == condition
+
+
+@comparator
+def contains_dict(dict_val, *args, **kwargs):
+    expected_dict = dict(*args, **kwargs)
+    try:
+        return all(v == dict_val[k] for k, v in expected_dict.items())
+    except KeyError:
+        return False
 
 
 # Convenience functions to assist parsing kwargs and compare agains objects
