@@ -1,7 +1,9 @@
 """The most basic example of message passing via RabbitMQ"""
 
+# import threading
 import pika
 import pytest
+
 
 BROKER = "localhost"
 QUEUE = "hello"
@@ -39,9 +41,14 @@ def test_basic_get(pub, sub):
     #     auto_ack=True,
     #     on_message_callback=lambda c, m, p, b: messages.append(b))
 
+    # consume_thread = threading.Thread(target=channel.start_consuming)
+    # consume_thread.start()
+
     pub.basic_publish(exchange="", routing_key=QUEUE, body=BODY)
 
-    # sub.start_consuming()
+    # XXX: thread safety
+    # sub.stop_consuming()
+    # thread.join(0)
     # assert messages.pop() == BODY
 
     msg = sub.basic_get(QUEUE)
