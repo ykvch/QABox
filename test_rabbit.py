@@ -1,4 +1,16 @@
-"""The most basic example of message passing via RabbitMQ"""
+"""The most basic example of message passing via RabbitMQ
+
+RabbitMQ message path
+===
+Producer -> Exchange -> Routing (rules) -> Queue(s) -> Consumer
+Protocol used (other are also available): AMQP
+
+Run broker (in docker)
+===
+`docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management`
+
+Access admin panel via: `http://localhost:15672` creds: guest/guest
+"""
 
 # import threading
 import pika
