@@ -12,12 +12,12 @@ EXAMPLE: A function to validate HTTP response object attributes
 
 Simple validator may look like (could be oneliner):
 
-def validate(response, **kwargs):
-    for k, v in kwargs.items():
-        if getattr(response, k) == v:
-            continue
-        else:
-            raise AssertionError(k, v)
+>>> def validate(response, **kwargs):
+>>>     for k, v in kwargs.items():
+>>>         if getattr(response, k) == v:
+>>>             continue
+>>>         else:
+>>>             raise AssertionError(k, v)
 
 Usage (check if status is 200 and body is 'asdf'):
 >>> validate(response, status=200, body='asdf')
@@ -38,14 +38,14 @@ Profit!
 
 A few steps to make things even prettier:
 
-def validate(response, **kwargs):
-    for k, v in kwargs2cmp(kwargs):  # arg name parsing kicks in here
-    # allow kwargs to be interpreted as
-    # <argument-name>_<compare-logic>=<expected-value>
-        if getattr(response, k) == v:
-            continue
-        else:
-            raise AssertionError(k, v)
+>>> def validate(response, **kwargs):
+>>>     for k, v in kwargs2cmp(kwargs):  # arg name parsing kicks in here
+>>>     # allow kwargs to be interpreted as
+>>>     # <argument-name>_<compare-logic>=<expected-value>
+>>>         if getattr(response, k) == v:
+>>>             continue
+>>>         else:
+>>>             raise AssertionError(k, v)
 
 And usage becomes even simpler:
 >>> validate(response, status_lt=206, body_len_within=[300, 400])
