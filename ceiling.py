@@ -7,6 +7,7 @@ class Ceiling(list):
     >>> x[0:5]
     [1, 3, 2, 2, 2]
     '''
+
     def __getitem__(self, item):
         gi = super().__getitem__
         if isinstance(item, slice):
